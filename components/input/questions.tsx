@@ -3,7 +3,7 @@
 /** 입력 질문 정의 + 질문별 입력기 (한 화면에 질문 하나를 크게) */
 import type { ReactNode } from "react";
 import { GOAL_TAGS, goalText, schoolPatch, type AppState } from "@/lib/app-state";
-import { MIN_WAGE_2026, hm, won, type Commute } from "@/lib/calc";
+import { hm, won, type Commute } from "@/lib/calc";
 import { SCHOOLS, findSchool } from "@/lib/data";
 import { Chip, HeroNumberInput, OptionList, QuickChips, Stepper, TextArea } from "@/components/ui";
 import { AddressInput } from "./address-input";
@@ -15,7 +15,7 @@ export const DAYS_MAX = 7;
 /** 환승 횟수 상한 (피로 계수는 4번부터 최대치라 그 이상은 결과가 같음) */
 export const TRANSFERS_MAX = 6;
 
-export type QId = "school" | "home" | "route" | "oneway" | "transfers" | "fare" | "days" | "wage" | "goal";
+export type QId = "school" | "home" | "route" | "oneway" | "transfers" | "fare" | "days" | "goal";
 
 export interface Question {
   id: QId;
@@ -74,12 +74,6 @@ export const QUESTIONS: Question[] = [
     title: "일주일에 며칠\n학교에 가요?",
     sub: "학회·동아리로 주말에도 나가면 그 날도 세어 주세요.",
     display: (s) => `주 ${s.commute.daysPerWeek}일`, valid: always,
-  },
-  {
-    id: "wage", group: "생활 패턴", label: "내 1시간의 가치", kind: "input",
-    title: "내 1시간은\n얼마짜리일까요?",
-    sub: "통학 시간을 돈으로 바꿀 때 기준이에요. 잘 모르겠으면 최저임금 그대로 두세요.",
-    display: (s) => won(s.commute.hourlyWage), valid: (s) => s.commute.hourlyWage > 0,
   },
   {
     id: "goal", group: "가치관", label: "대학생활 목표", kind: "input",
@@ -171,20 +165,6 @@ export function HeroEditor({ q, state, update, onDone, autoFocus, shortcuts }: E
         <Stepper
           size="hero" label={q.label} prefix="주" unit="일" min={DAYS_MIN} max={DAYS_MAX}
           value={c.daysPerWeek} onChange={(v) => setC({ daysPerWeek: v })} autoFocus={autoFocus} onEnter={onDone}
-        />
-      );
-    case "wage":
-      return (
-        <NumberWithChips
-          id={id} label={q.label} autoFocus={autoFocus} onEnter={onDone} step={10}
-          suffix="원" value={c.hourlyWage} onChange={(v) => setC({ hourlyWage: v })}
-          chips={[
-            { value: MIN_WAGE_2026, label: "2026 최저임금" },
-            { value: 12_000, label: "12,000원" },
-            { value: 15_000, label: "15,000원" },
-            { value: 20_000, label: "20,000원" },
-          ]}
-          note={<>시간당 · 알바 시급이나 &lsquo;이 정도면 시간을 팔겠다&rsquo; 싶은 금액</>}
         />
       );
     case "goal":

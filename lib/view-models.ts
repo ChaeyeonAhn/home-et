@@ -3,7 +3,7 @@
  * 디자인을 바꿀 때 화면 JSX만 다시 쓰고, 숫자와 문구는 여기서 그대로 가져다 쓰면 됩니다.
  */
 import {
-  compute, fromPercents, hm, hours, man, toPercents, won,
+  MIN_WAGE_2026, compute, fromPercents, hm, hours, man, toPercents, won,
   type LivingCosts, type WeightKey,
 } from "./calc";
 import { findSchool, type Region, type School } from "./data";
@@ -46,6 +46,8 @@ export function reportModel(state: AppState, name: string | null) {
       { label: "내가 매기는 1시간의 가치", value: won(myHour), pct: (myHour / scale) * 100, tone: "primary" as const },
       { label: "자취로 1시간을 되사는 가격", value: won(price), pct: (price / scale) * 100, tone: "accent" as const },
     ],
+    // 1시간의 가치 = 최저임금 × 가치관 보정 (보정 = (w시간 + 피로계수·w체력) / w돈)
+    hourBasis: `${MIN_WAGE_2026.toLocaleString("ko-KR")}원(2026 최저임금) × 가치관 보정 ${(r.myHourValue / MIN_WAGE_2026).toFixed(2)}배 = ${won(myHour)}`,
     summary: `한 달에 약 ${hours(r.savedHours)}을 되찾는 대신 약 ${man(r.extraCost, 0)}을 더 써요. 내 1시간의 가치가 자취 가격보다 크면 자취가 이득이에요.`,
     gains: [
       { label: "통학 시간 (여유 시간 포함)", value: hours(r.savedHours) },

@@ -60,7 +60,7 @@ export const INITIAL: AppState = {
     headwayMin: 0, // 배차 간격 질문 삭제. 계산식은 그대로 두고 0으로 고정
     roundTripFare: 4_500,
     daysPerWeek: 4,
-    hourlyWage: MIN_WAGE_2026,
+    hourlyWage: MIN_WAGE_2026, // 시급 질문 삭제. 기준은 최저임금 고정, 개인차는 가중치(대학생활 목표 분석)가 반영
   },
   goalTags: ["grades", "clubs", "parents"],
   goal: "",
@@ -120,8 +120,8 @@ export function loadState(key = STORAGE_KEY): AppState | null {
     return {
       ...INITIAL,
       ...parsed,
-      // 배차 간격 질문이 없어졌으므로 예전에 저장된 값도 0으로
-      commute: { ...INITIAL.commute, ...parsed.commute, headwayMin: 0 },
+      // 배차 간격·시급 질문이 없어졌으므로 예전에 저장된 값도 고정값으로
+      commute: { ...INITIAL.commute, ...parsed.commute, headwayMin: 0, hourlyWage: MIN_WAGE_2026 },
       costs: { ...INITIAL.costs, ...parsed.costs },
     };
   } catch {
