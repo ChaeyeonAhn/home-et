@@ -3,7 +3,8 @@ import { z } from "zod";
 import { normalizeWeights } from "@/lib/calc";
 import { keywordWeights, type WeightAnalysis } from "@/lib/weights";
 
-const MODEL = process.env.GEMINI_MODEL ?? "gemini-3.8-flash";
+// Flash 계열은 붐빌 때 503이 잦아서 가볍고 빠른 Lite를 기본으로 씀 (가중치 3개 추출엔 충분)
+const MODEL = process.env.GEMINI_MODEL || "gemini-flash-lite-latest";
 
 const SYSTEM = `너는 서울에서 첫 자취를 고민하는 대학생의 "대학생활에서 얻고 싶은 것" 글을 읽고,
 자취 판단에 쓸 세 가지 가치의 가중치를 매기는 분석기야.

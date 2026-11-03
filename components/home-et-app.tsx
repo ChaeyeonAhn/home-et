@@ -37,7 +37,17 @@ export function HomeEtApp() {
     if (today) saveState(state);
   }, [state, today]);
 
-  const update = useCallback((patch: Partial<AppState>) => setState((s) => ({ ...s, ...patch })), []);
+  const update = useCallback(
+    (patch: Partial<AppState>) =>
+      setState((s) => {
+        const next = { ...s, ...patch };
+        // 대학생활 목표가 바뀌면 예전 가치관 분석은 무효 → 다시 검사해야 리포트가 열림
+        // (안 그러면 상단 메뉴로 리포트에 갔을 때 바꾸기 전 분석이 그대로 보임)
+        if (s.analysis && goalText(next) !== goalText(s)) next.analysis = null;
+        return next;
+      }),
+    [],
+  );
   const go = (step: StepNo) => {
     update({ step });
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -79,7 +89,17 @@ export function HomeEtApp() {
           onInput && "max-md:flex max-md:flex-col max-md:p-0 max-md:bg-surface",
         )}
       >
-        {onInput && <StepFlow state={state} update={update} onSubmit={analyze} loading={loading} onOpenReport={ready ? () => go(2) : undefined} />}
+        {onInput && (
+          <StepFlow
+            // 저장값을 복원한 뒤 한 번 다시 만들어서, 복원된 답 기준으로 진행 상태(확인 화면부터 등)를 잡게 함
+            key={today ? "restored" : "initial"}
+            state={state}
+            update={update}
+            onSubmit={analyze}
+            loading={loading}
+            onOpenReport={ready ? () => go(2) : undefined}
+          />
+        )}
         {state.step === 2 && ready && (
           <ReportScreen
             state={state}

@@ -5,7 +5,9 @@ import type { ReactNode } from "react";
 import { GOAL_TAGS, goalText, schoolPatch, type AppState } from "@/lib/app-state";
 import { MIN_WAGE_2026, hm, won, type Commute } from "@/lib/calc";
 import { SCHOOLS, findSchool } from "@/lib/data";
-import { Chip, HeroNumberInput, HeroTextInput, OptionList, QuickChips, Stepper, TextArea } from "@/components/ui";
+import { Chip, HeroNumberInput, OptionList, QuickChips, Stepper, TextArea } from "@/components/ui";
+import { AddressInput } from "./address-input";
+import { RouteEditor } from "./route-editor";
 
 /** 주당 등교일 범위 (학회·주말 활동까지 7일) */
 export const DAYS_MIN = 1;
@@ -13,7 +15,7 @@ export const DAYS_MAX = 7;
 /** 환승 횟수 상한 (피로 계수는 4번부터 최대치라 그 이상은 결과가 같음) */
 export const TRANSFERS_MAX = 6;
 
-export type QId = "school" | "home" | "oneway" | "transfers" | "headway" | "fare" | "days" | "wage" | "goal";
+export type QId = "school" | "home" | "route" | "oneway" | "transfers" | "fare" | "days" | "wage" | "goal";
 
 export interface Question {
   id: QId;
@@ -39,8 +41,15 @@ export const QUESTIONS: Question[] = [
   {
     id: "home", group: "학교 · 집", label: "본가", kind: "input",
     title: "본가는 어디예요?",
-    sub: "동 이름까지만 적어도 충분해요.",
+    sub: "최소한 가까운 역 이름까지는 적어 주세요. 도로명 주소면 더 정확해요.",
     display: (s) => s.home.trim() || "입력 전", valid: (s) => s.home.trim().length > 0,
+  },
+  {
+    id: "route", group: "통학 경로", label: "경로", kind: "choice",
+    title: "평소 이렇게\n통학하나요?",
+    sub: "Google 지도로 평일 오전 8시 출발 경로를 찾았어요. 고르면 다음 질문에 미리 채워 둘게요.",
+    display: (s) => (s.routeKey ? s.routeSummary || "직접 입력" : "입력 전"),
+    valid: always, // 경로를 못 찾아도 다음 질문에서 직접 입력할 수 있음
   },
   {
     id: "oneway", group: "통학 경로", label: "편도 시간", kind: "input",
@@ -53,12 +62,6 @@ export const QUESTIONS: Question[] = [
     title: "가는 길에 몇 번 갈아타요?",
     sub: "환승이 많을수록 같은 1시간도 더 지치게 계산해요.",
     display: (s) => (s.commute.transfers === 0 ? "없음" : `${s.commute.transfers}번`), valid: always,
-  },
-  {
-    id: "headway", group: "통학 경로", label: "배차 간격", kind: "input",
-    title: "타는 버스·지하철은\n몇 분마다 와요?",
-    sub: "놓쳤을 때 기다리는 시간을 하루 한 번 더해요.",
-    display: (s) => `${s.commute.headwayMin}분`, valid: always,
   },
   {
     id: "fare", group: "통학 경로", label: "왕복 교통비", kind: "input",
@@ -118,31 +121,34 @@ export function HeroEditor({ q, state, update, onDone, autoFocus, shortcuts }: E
           value={state.schoolId}
           options={SCHOOLS.map((s) => ({ value: s.id, label: s.name, sub: s.district }))}
           onSelect={(v) => {
-            update(schoolPatch(state, v));
+            // 학교가 바뀌면 예전 경로 선택은 무효
+            update({ ...schoolPatch(state, v), ...(v !== state.schoolId && { routeKey: null, routeSummary: "" }) });
             onDone?.();
           }}
         />
       );
     case "home":
       return (
-        <HeroTextInput
+        <AddressInput
           id={id}
-          aria-label={q.label}
+          label={q.label}
           autoFocus={autoFocus}
-          autoComplete="address-level3"
-          placeholder="예: 경기 남양주시 별내동"
+          placeholder="집 주소 또는 근처 역"
           value={state.home}
-          onChange={(e) => update({ home: e.target.value })}
+          // 본가가 바뀌면 예전 경로 선택은 무효
+          onChange={(v) => update({ home: v, routeKey: null, routeSummary: "" })}
           onEnter={q.valid(state) ? onDone : undefined}
         />
       );
+    case "route":
+      return <RouteEditor state={state} update={update} onDone={onDone} shortcuts={shortcuts} />;
     case "oneway":
       return (
         <NumberWithChips
           id={id} label={q.label} autoFocus={autoFocus} onEnter={onDone}
           suffix="분" value={c.oneWayMin} onChange={(v) => setC({ oneWayMin: v })}
           chips={[30, 45, 60, 90, 120].map((v) => ({ value: v, label: hm(v) }))}
-          note={c.oneWayMin > 0 ? <>하루 왕복 약 <b className="text-fg">{hm(2 * c.oneWayMin + c.headwayMin)}</b> (기다리는 시간 포함)</> : null}
+          note={c.oneWayMin > 0 ? <>하루 왕복 약 <b className="text-fg">{hm(2 * c.oneWayMin)}</b></> : null}
         />
       );
     case "transfers":
@@ -150,14 +156,6 @@ export function HeroEditor({ q, state, update, onDone, autoFocus, shortcuts }: E
         <Stepper
           size="hero" label={q.label} unit="번" min={0} max={TRANSFERS_MAX}
           value={c.transfers} onChange={(v) => setC({ transfers: v })} autoFocus={autoFocus} onEnter={onDone}
-        />
-      );
-    case "headway":
-      return (
-        <NumberWithChips
-          id={id} label={q.label} autoFocus={autoFocus} onEnter={onDone}
-          suffix="분" value={c.headwayMin} onChange={(v) => setC({ headwayMin: v })}
-          chips={[5, 10, 15, 20, 30].map((v) => ({ value: v, label: `${v}분` }))}
         />
       );
     case "fare":

@@ -35,6 +35,18 @@ export const DEFAULT_COSTS: Omit<LivingCosts, "rent" | "mgmt"> = {
   annualRate: 0.035,
 };
 
+/**
+ * 수도권 통합 거리비례 요금(편도, 카드). Google 경로에 요금이 비어 올 때 씀.
+ * 10km까지 1,550원, 10~50km 5km마다 +100, 50km 초과 8km마다 +100
+ */
+// ponytail: 광역버스·GTX 별도 요금 미반영. 해당 경로가 많아지면 탈것 종류별 요금 추가
+export function metroFare(km: number) {
+  let fare = 1_550;
+  if (km > 10) fare += Math.ceil((Math.min(km, 50) - 10) / 5) * 100;
+  if (km > 50) fare += Math.ceil((km - 50) / 8) * 100;
+  return fare;
+}
+
 /** 피로 계수 f: 환승이 많을수록 같은 1시간이 더 지친다 (상한 0.5). */
 export function fatigueCoef(transfers: number) {
   return Math.min(0.5, 0.15 + 0.1 * Math.max(0, transfers));

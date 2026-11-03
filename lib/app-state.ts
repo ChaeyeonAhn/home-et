@@ -26,6 +26,10 @@ export interface AppState {
   step: StepNo;
   schoolId: string;
   home: string;
+  /** 고른 통학 경로(RouteOption.key). "manual" = 직접 입력, null = 아직 안 고름 */
+  routeKey: string | null;
+  /** 고른 경로 요약(질문 목록·확인 화면 표시용) */
+  routeSummary: string;
   commute: Commute;
   goalTags: GoalTagId[]; // 대학생활 목표: 고른 칩
   goal: string; // 대학생활 목표: 칩 밖의 추가 설명 (선택)
@@ -48,10 +52,12 @@ export const INITIAL: AppState = {
   step: 1,
   schoolId: firstSchool.id,
   home: "경기 남양주시 별내동",
+  routeKey: null,
+  routeSummary: "",
   commute: {
     oneWayMin: 85,
     transfers: 2,
-    headwayMin: 15,
+    headwayMin: 0, // 배차 간격 질문 삭제. 계산식은 그대로 두고 0으로 고정
     roundTripFare: 4_500,
     daysPerWeek: 4,
     hourlyWage: MIN_WAGE_2026,
@@ -108,7 +114,13 @@ export function loadState(key = STORAGE_KEY): AppState | null {
       if (parsed.goal === OLD_DEFAULT_GOAL) delete parsed.goal;
       else parsed.goalTags = [];
     }
-    return { ...INITIAL, ...parsed, commute: { ...INITIAL.commute, ...parsed.commute }, costs: { ...INITIAL.costs, ...parsed.costs } };
+    return {
+      ...INITIAL,
+      ...parsed,
+      // 배차 간격 질문이 없어졌으므로 예전에 저장된 값도 0으로
+      commute: { ...INITIAL.commute, ...parsed.commute, headwayMin: 0 },
+      costs: { ...INITIAL.costs, ...parsed.costs },
+    };
   } catch {
     return null;
   }

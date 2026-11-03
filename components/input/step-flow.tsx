@@ -11,10 +11,12 @@ const AUTO_NEXT_MS = 220; // 선택 피드백을 잠깐 보여 준 뒤 넘어감
 
 /** 한 화면에 한 질문. 모바일은 먼저 시작 화면(서비스 소개)을 보여 줌 */
 export function StepFlow({ state, update, onSubmit, loading, onOpenReport }: InputFlowProps) {
+  // 이미 다 답하고 검사한 적이 있으면(새로고침·리포트에서 돌아옴) 저장된 답을 보여 주는 확인 화면부터
+  const returning = state.analysis !== null && allValid(state);
   const [started, setStarted] = useState(false); // 모바일 시작 화면을 지났는지 (데스크톱은 무시)
-  const [idx, setIdx] = useState(0); // N = 확인 화면
+  const [idx, setIdx] = useState(returning ? N : 0); // N = 확인 화면
   const [dir, setDir] = useState<1 | -1>(1);
-  const [reached, setReached] = useState(0);
+  const [reached, setReached] = useState(returning ? N : 0);
   const [fromReview, setFromReview] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const desktop = useIsDesktop();
