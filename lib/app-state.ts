@@ -1,6 +1,6 @@
 import {
-  DEFAULT_COSTS, DEFAULT_WEIGHTS, MIN_WAGE_2026, toPercents,
-  type Commute, type LivingCosts, type Percents,
+  DEFAULT_COSTS, LEGACY_INITIAL_TOTALS, MIN_WAGE_2026, NEUTRAL, fromLegacyWeights, sanitizeAdjust,
+  type Adjust, type Commute, type LivingCosts,
 } from "./calc";
 import { SCHOOLS, findSchool, type Region } from "./data";
 import type { WeightAnalysis } from "./weights";
@@ -34,7 +34,7 @@ export interface AppState {
   goalTags: GoalTagId[]; // 대학생활 목표: 고른 칩
   goal: string; // 대학생활 목표: 칩 밖의 추가 설명 (선택)
   analysis: WeightAnalysis | null;
-  pct: Percents;
+  adj: Adjust; // 가치관 조정값 (0 = 보통, −3 ~ +3)
   costs: LivingCosts; // 리포트(①)에서 쓰는 가정값. rent/mgmt = 학교 주변 기본 시세
   regionId: string; // 지역 id 또는 "custom"
   custom: Region;
@@ -65,7 +65,7 @@ export const INITIAL: AppState = {
   goalTags: ["grades", "clubs", "parents"],
   goal: "",
   analysis: null,
-  pct: toPercents(DEFAULT_WEIGHTS),
+  adj: NEUTRAL,
   costs: { ...DEFAULT_COSTS, rent: firstRegion.rentMedian, mgmt: firstRegion.mgmtMedian },
   regionId: firstRegion.id,
   custom: {
@@ -101,7 +101,6 @@ export function schoolPatch(s: AppState, id: string): Partial<AppState> {
   };
 }
 
-const OLD_DEFAULT_INITIAL_TOTAL = 1_650_000;
 const OLD_DEFAULT_GOAL ="학점 관리를 제대로 하고 싶고, 통학 때문에 동아리를 못 해서 아쉬워요. 그래도 부모님께 부담은 덜 드리고 싶어요.";
 
 export const STORAGE_KEY = "home-et:v1";
@@ -109,14 +108,22 @@ export function loadState(key = STORAGE_KEY): AppState | null {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<AppState>;
+    const parsed = JSON.parse(raw) as Partial<AppState> & { pct?: Partial<Adjust> };
     // 칩 도입 전 저장값: 예전 기본 문장이면 버리고 기본 칩으로, 직접 쓴 글이면 추가 설명으로 유지
     if (!parsed.goalTags) {
       if (parsed.goal === OLD_DEFAULT_GOAL) delete parsed.goal;
       else parsed.goalTags = [];
     }
-    // 초기 비용 기본값 165만 → 80만. 예전 기본값 그대로면 새 기본값으로, 직접 고친 값은 유지
-    if (parsed.costs?.initialTotal === OLD_DEFAULT_INITIAL_TOTAL) parsed.costs.initialTotal = DEFAULT_COSTS.initialTotal;
+    // 합 1 가중치(pct %) 시절 저장값 → 0 기준 조정값으로
+    if (parsed.pct) {
+      if (!parsed.adj) parsed.adj = fromLegacyWeights(parsed.pct);
+      if (parsed.analysis) parsed.analysis = { ...parsed.analysis, ...fromLegacyWeights(parsed.analysis) };
+      delete parsed.pct;
+    }
+    parsed.adj = sanitizeAdjust(parsed.adj ?? NEUTRAL);
+    // 예전 초기 비용 기본값(165만, 80만: 중개보수 포함)이면 새 기본값(중개보수 제외)으로, 직접 고친 값은 유지
+    if (parsed.costs && LEGACY_INITIAL_TOTALS.includes(parsed.costs.initialTotal ?? -1))
+      parsed.costs.initialTotal = DEFAULT_COSTS.initialTotal;
     return {
       ...INITIAL,
       ...parsed,

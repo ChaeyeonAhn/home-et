@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import type { AppState } from "@/lib/app-state";
-import { rebalance, type LivingCosts } from "@/lib/calc";
-import { WEIGHT_LABELS, reportModel } from "@/lib/view-models";
+import type { LivingCosts } from "@/lib/calc";
+import { reportModel } from "@/lib/view-models";
 import { cx } from "@/components/ui/styles";
 import {
   ActionBar, Badge, BigNumber, Button, Callout, Card, CardTitle, Dialog, Em, Field, FinePrint, LabeledMeter,
@@ -54,6 +54,10 @@ export function ReportScreen({
             <div className="mt-5 space-y-3">
               <Meter value={m.indexPct} tone={tone} size="sm" marker />
               <ScaleLabels items={["통학 유리", "50 = 손익분기", "자취 유리"]} />
+            </div>
+            <div className="mt-5">
+              <StatList rows={m.indexLines} />
+              <FinePrint className="mt-2">{m.indexNote}</FinePrint>
             </div>
           </Card>
         </div>
@@ -106,14 +110,14 @@ export function ReportScreen({
               {showAssumptions ? "가정값 접기" : "가정값 직접 고치기"}
             </LinkButton>
           </div>
-          {showAssumptions && <Assumptions costs={state.costs} onChange={(patch) => update({ costs: { ...state.costs, ...patch } })} />}
+          {showAssumptions && <Assumptions note={m.brokerageNote} costs={state.costs} onChange={(patch) => update({ costs: { ...state.costs, ...patch } })} />}
         </Card>
 
         <Card>
           <CardTitle
             aside={
-              m.aiPct && (
-                <Button variant="secondary" size="sm" disabled={m.isAiValue} onClick={() => update({ pct: m.aiPct! })}>
+              m.aiAdj && (
+                <Button variant="secondary" size="sm" disabled={m.isAiValue} onClick={() => update({ adj: m.aiAdj! })}>
                   AI 분석값으로
                 </Button>
               )
@@ -121,15 +125,33 @@ export function ReportScreen({
           >
             내 가치관
           </CardTitle>
-          <div className="mt-5 space-y-5">
-            {WEIGHT_LABELS.map(({ key, label }) => (
-              <Slider
-                key={key}
-                label={label}
-                value={state.pct[key]}
-                display={`${state.pct[key]}%`}
-                onChange={(v) => update({ pct: rebalance(state.pct, key, v) })}
-              />
+          <FinePrint className="mt-1">0 = 보통 대학생 기준. 하나를 바꿔도 나머지는 그대로예요.</FinePrint>
+          <div className="mt-5 space-y-6">
+            {m.adjust.map((a) => (
+              <div key={a.key}>
+                <Slider
+                  label={<b className="text-fg">{a.label}</b>}
+                  sub={a.hint}
+                  display={
+                    <>
+                      <span className="mr-1.5 font-normal text-fg-sub">{a.level}</span>
+                      {a.display}
+                    </>
+                  }
+                  valueText={`${a.display}, ${a.level}`}
+                  min={a.min}
+                  max={a.max}
+                  step={1}
+                  origin={0}
+                  value={a.value}
+                  onChange={(v) => update({ adj: { ...state.adj, [a.key]: v } })}
+                />
+                <div className="mt-1.5 flex justify-between text-xs text-fg-muted">
+                  <span>덜 중요</span>
+                  <span>{a.perStep}</span>
+                  <span>더 중요</span>
+                </div>
+              </div>
             ))}
           </div>
           {m.reason && (
@@ -185,12 +207,12 @@ export function ReportScreen({
   );
 }
 
-function Assumptions({ costs, onChange }: { costs: LivingCosts; onChange: (patch: Partial<LivingCosts>) => void }) {
+function Assumptions({ costs, note, onChange }: { costs: LivingCosts; note: string; onChange: (patch: Partial<LivingCosts>) => void }) {
   const fields: { label: string; key: keyof LivingCosts; step: number }[] = [
     { label: "월세 (학교 주변 기본값)", key: "rent", step: 10_000 },
     { label: "관리비", key: "mgmt", step: 10_000 },
     { label: "추가 생활비", key: "living", step: 10_000 },
-    { label: "초기 비용 총액", key: "initialTotal", step: 50_000 },
+    { label: "이사·가구가전 (중개보수 제외)", key: "initialTotal", step: 50_000 },
     { label: "보증금", key: "deposit", step: 1_000_000 },
   ];
   return (
@@ -213,6 +235,7 @@ function Assumptions({ costs, onChange }: { costs: LivingCosts; onChange: (patch
       </Field>
       <FinePrint className="col-span-2 md:col-span-3">
         자취 후 왕복 20분, 한 달 = 주당 등교일 × 4.3일(학기 중 기준), 피로 계수 = 0.15 + 0.1 × 환승 횟수(최대 0.5)로 계산해요. 모두 팀 확정 전 초안이에요.
+        <span className="mt-1 block">{note}</span>
       </FinePrint>
     </Panel>
   );

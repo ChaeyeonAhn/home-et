@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { cx } from "@/components/ui/styles";
 import { INITIAL, STORAGE_KEY, goalText, loadState, saveState, type AppState, type StepNo } from "@/lib/app-state";
-import { DEFAULT_WEIGHTS, toPercents } from "@/lib/calc";
+import { NEUTRAL, sanitizeAdjust } from "@/lib/calc";
 import { findSchool } from "@/lib/data";
 import { addDays, startOfDay, toInput } from "@/lib/dday";
 import type { WeightAnalysis } from "@/lib/weights";
@@ -66,11 +66,11 @@ export function HomeEtApp() {
       const analysis = (await res.json()) as WeightAnalysis;
       // 새로 검사하면 맞춤 월세 추천은 학교에서 가장 가까운 동부터 보여 줌 (예전에 고른 동은 초기화)
       const nearest = findSchool(state.schoolId).regions[0];
-      update({ analysis, pct: toPercents(analysis), decision: null, regionId: nearest.id, leaseRent: nearest.rentMedian });
+      update({ analysis, adj: sanitizeAdjust(analysis), decision: null, regionId: nearest.id, leaseRent: nearest.rentMedian });
     } catch {
       update({
-        analysis: { ...DEFAULT_WEIGHTS, reason: "분석 서버에 연결하지 못해 세 기준을 똑같이 두었어요.", source: "default" },
-        pct: toPercents(DEFAULT_WEIGHTS),
+        analysis: { ...NEUTRAL, reason: "분석 서버에 연결하지 못해 모두 보통(0)으로 두었어요.", source: "default" },
+        adj: NEUTRAL,
       });
     } finally {
       setLoading(false);
