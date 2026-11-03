@@ -140,8 +140,8 @@ function RegionMap({
           disableDefaultUI
         >
           <AdvancedMarker position={{ lat: school.lat, lng: school.lng }} title={school.name}>
-            {/* Google 핀은 CSS 변수를 못 읽어서 globals.css의 accent 토큰 값을 그대로 씀 */}
-            <Pin background="#c2510e" borderColor="#8a3608" glyphColor="#ffffff" />
+            {/* Google 핀은 CSS 변수를 못 읽어서 globals.css의 accent-strong / accent / on-accent 토큰 값을 그대로 씀 */}
+            <Pin background="#e8894d" borderColor="#a6420a" glyphColor="#2a1405" />
           </AdvancedMarker>
           {regions.map((rg) => (
             <AdvancedMarker key={rg.id} position={{ lat: rg.lat, lng: rg.lng }} title={`${rg.name} 선택`} onClick={() => onPick(rg)}>

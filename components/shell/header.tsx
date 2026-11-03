@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { StepNo } from "@/lib/app-state";
 import { useAuth } from "@/components/providers";
-import { cx, focusRing } from "@/components/ui/styles";
+import { cx, focusRing, glassBar } from "@/components/ui/styles";
 
 export const STEPS: { no: StepNo; label: string }[] = [
   { no: 1, label: "정보 입력" },
@@ -33,7 +33,7 @@ export function Header({
   }, []);
 
   return (
-    <header ref={ref} className={cx("sticky top-0 z-20 border-b border-border bg-surface/95 backdrop-blur", className)}>
+    <header ref={ref} className={cx("sticky top-0 z-20 border-b border-glass-border shadow-[0_8px_30px_rgb(20_30_55/0.06)]", glassBar, className)}>
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 sm:px-6">
         <button type="button" onClick={() => onNavigate(1)} className={cx("shrink-0 rounded-md", focusRing)} aria-label="HOME:ET 처음으로">
           <Logo />
@@ -78,7 +78,7 @@ export function Header({
             aria-current={step === no ? "step" : undefined}
             className={cx("group flex-1 py-2 disabled:cursor-not-allowed", focusRing)}
           >
-            <span className={cx("block h-1 rounded-full transition", no <= step ? "bg-primary" : "bg-border", no > step && "group-enabled:bg-primary/25")} />
+            <span className={cx("block h-1 rounded-full transition", no <= step ? "bg-primary" : "bg-track", no > step && "group-enabled:bg-primary/25")} />
           </button>
         ))}
       </nav>
@@ -88,8 +88,8 @@ export function Header({
 
 export function Logo() {
   return (
-    <span className="text-xl font-extrabold tracking-tight">
-      HOME<span className="text-accent">:</span>ET
+    <span className="font-display text-xl font-semibold tracking-[0.03em] text-primary">
+      HOME<span className="text-accent-strong">:</span>ET
     </span>
   );
 }
@@ -125,7 +125,7 @@ function AuthButton() {
       type="button"
       onClick={auth.signIn}
       className={cx(
-        "flex shrink-0 items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-2 text-[13px] font-semibold hover:bg-surface-muted",
+        "flex shrink-0 items-center gap-2 rounded-full border border-primary/14 bg-surface/65 px-3.5 py-2 text-[13px] font-semibold hover:bg-surface",
         focusRing,
       )}
     >

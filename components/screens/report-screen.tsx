@@ -37,7 +37,7 @@ export function ReportScreen({
           pinned ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0",
         )}
       >
-        <div className="flex items-center gap-2 rounded-full border border-border bg-surface/95 py-1.5 pl-4 pr-1.5 text-sm shadow-sm backdrop-blur">
+        <div className="flex items-center gap-2 rounded-full border border-glass-border bg-glass-bar py-1.5 pl-4 pr-1.5 text-sm shadow-glass backdrop-glass">
           <span className="text-fg-sub">자취지수</span>
           <b className={cx("text-base tabular-nums", tone === "primary" ? "text-primary" : "text-accent")}>{m.index}</b>
           <Badge tone={tone}>{m.verdict}</Badge>

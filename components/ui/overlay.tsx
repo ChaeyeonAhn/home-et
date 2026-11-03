@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { cx } from "./styles";
+import { cx, glassBar } from "./styles";
 
 // ── 브라우저 상태 훅 ─────────────────────────────
 
@@ -66,9 +66,10 @@ export function ActionBar({
       <div
         style={lifted ? { bottom: inset } : undefined}
         className={cx(
-          "fixed inset-x-0 bottom-0 z-30 flex gap-2 border-t border-border bg-surface max-md:[&>*]:flex-1",
+          "fixed inset-x-0 bottom-0 z-30 flex gap-2 border-t border-glass-border max-md:[&>*]:flex-1",
+          glassBar,
           lifted ? "p-0 [&_button]:rounded-none" : "px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]",
-          "md:static md:z-auto",
+          "md:static md:z-auto md:backdrop-filter-none",
           desktopClassName,
         )}
       >
@@ -107,7 +108,7 @@ export function Dialog({
   return createPortal(
     <div className="fixed inset-0 z-50 grid place-items-center p-6" role="dialog" aria-modal="true" aria-labelledby={titleId}>
       <button type="button" aria-label="닫기" onClick={onClose} className="absolute inset-0 cursor-default bg-scrim motion-safe:animate-fade" />
-      <div className="relative w-full max-w-sm rounded-card bg-surface p-6 shadow-xl motion-safe:animate-rise">
+      <div className="relative w-full max-w-sm rounded-card border border-glass-border bg-glass-strong p-6 shadow-glass backdrop-glass motion-safe:animate-rise">
         <h2 id={titleId} className="text-xl font-bold leading-snug">
           {title}
         </h2>
