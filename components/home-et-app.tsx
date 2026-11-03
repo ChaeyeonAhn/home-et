@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { cx } from "@/components/ui/styles";
 import { INITIAL, STORAGE_KEY, goalText, loadState, saveState, type AppState, type StepNo } from "@/lib/app-state";
-import { DEFAULT_WEIGHTS, toPercents } from "@/lib/calc";
+import { toPercents } from "@/lib/calc";
 import { addDays, startOfDay, toInput } from "@/lib/dday";
 import type { WeightAnalysis } from "@/lib/weights";
+import { defaultAnalysis } from "@/lib/weights-keyword";
 import { StepFlow } from "./input/step-flow";
 import { useAuth } from "./providers";
 import { DdayScreen } from "./screens/dday-screen";
@@ -55,10 +56,8 @@ export function HomeEtApp() {
       const analysis = (await res.json()) as WeightAnalysis;
       update({ analysis, pct: toPercents(analysis), decision: null });
     } catch {
-      update({
-        analysis: { ...DEFAULT_WEIGHTS, reason: "분석 서버에 연결하지 못해 세 기준을 똑같이 두었어요.", source: "default" },
-        pct: toPercents(DEFAULT_WEIGHTS),
-      });
+      const analysis = defaultAnalysis("분석 서버에 연결하지 못해 세 기준을 똑같이 두었어요.");
+      update({ analysis, pct: toPercents(analysis), decision: null });
     } finally {
       setLoading(false);
       go(2);

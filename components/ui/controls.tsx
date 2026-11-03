@@ -395,10 +395,11 @@ function CheckMark({ on }: { on: boolean }) {
   );
 }
 
-/** 라벨·값이 위에 붙은 0~100 슬라이더 */
+/** 라벨·값이 위에 붙은 슬라이더 (기본 0~100) */
 export function Slider({
-  label, value, onChange, display,
-}: { label: ReactNode; value: number; onChange: (v: number) => void; display?: ReactNode }) {
+  label, value, onChange, display, min = 0, max = 100,
+}: { label: ReactNode; value: number; onChange: (v: number) => void; display?: ReactNode; min?: number; max?: number }) {
+  const fill = ((Math.max(min, Math.min(max, value)) - min) / (max - min)) * 100;
   return (
     <label className="block">
       <span className="mb-2 flex justify-between text-sm">
@@ -408,10 +409,10 @@ export function Slider({
       <input
         type="range"
         className="ui-slider"
-        min={0}
-        max={100}
+        min={min}
+        max={max}
         value={value}
-        style={{ ["--pct" as string]: `${value}%` }}
+        style={{ ["--pct" as string]: `${fill}%` }}
         onChange={(e) => onChange(Number(e.target.value))}
       />
     </label>

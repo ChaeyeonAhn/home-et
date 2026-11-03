@@ -1,37 +1,47 @@
-import { DEFAULT_WEIGHTS, normalizeWeights, type Weights } from "./calc";
+// LLM 등급(−2 ~ +2) → 가중치 변환, 분석 결과 타입 (docs/metrics.md 4-1, 4-2)
+import { clampWeights, normalizeWeights, type WeightKey, type Weights } from "./calc";
 
-export interface WeightAnalysis extends Weights {
-  reason: string;
-  source: "gemini" | "keyword" | "default";
+export type Levels = Record<WeightKey, number>; // 각 −2 ~ 2 정수
+export type Confidence = "high" | "medium" | "low";
+
+/** 원문에서 따온 근거 한 줄 */
+export interface Evidence {
+  quote: string;
+  axis: WeightKey;
+  dir: "+" | "-";
 }
 
-// Gemini를 못 쓸 때(키 없음·실패) 쓰는 키워드 기반 대체 분석
-const KEYWORDS: Record<keyof Weights, string[]> = {
-  money: ["돈", "부모", "부담", "아끼", "절약", "용돈", "비용", "저축", "생활비", "빚", "대출", "월세"],
-  time: ["공부", "학점", "시험", "동아리", "시간", "알바", "취업", "인턴", "준비", "자격증", "프로젝트", "대외활동", "자기계발"],
-  body: ["체력", "피곤", "피로", "힘들", "휴식", "잠", "수면", "건강", "지치", "운동", "멀미", "녹초"],
-};
-const LABEL: Record<keyof Weights, string> = { money: "돈", time: "시간", body: "체력" };
+/** /api/weights 응답 = 앱 상태에 저장하는 분석 결과. money·time·body는 합 1, 각각 [0.15, 0.60] */
+export interface WeightAnalysis extends Weights {
+  source: "llm" | "keyword" | "default";
+  levels: Levels | null; // LLM이 매긴 등급 (대체 분석이면 null)
+  evidence: Evidence[];
+  confidence: Confidence;
+  reason: string; // 화면에 보여 줄 한 줄 근거
+}
 
-export function keywordWeights(goal: string): WeightAnalysis {
-  const text = goal.trim();
-  if (!text) return { ...DEFAULT_WEIGHTS, reason: "생활 목표가 비어 있어 세 기준을 똑같이 두었어요.", source: "default" };
+export const LEVEL_BASE = 1.5;
+export const AXIS_LABEL: Record<WeightKey, string> = { money: "돈", time: "시간", body: "체력" };
 
-  const hits: Record<keyof Weights, string[]> = { money: [], time: [], body: [] };
-  (Object.keys(KEYWORDS) as (keyof Weights)[]).forEach((k) => {
-    for (const word of KEYWORDS[k]) if (text.includes(word)) hits[k].push(word);
-  });
-  const total = hits.money.length + hits.time.length + hits.body.length;
-  if (total === 0) return { ...DEFAULT_WEIGHTS, reason: "뚜렷한 우선순위를 찾지 못해 세 기준을 똑같이 두었어요.", source: "default" };
+/** 등급 → 가중치. 1.5^s로 바꾸고 정규화한 뒤 [0.15, 0.60] 범위로 맞춘다. */
+export function levelsToWeights(levels: Levels): Weights {
+  return clampWeights(
+    normalizeWeights({
+      money: Math.pow(LEVEL_BASE, levels.money),
+      time: Math.pow(LEVEL_BASE, levels.time),
+      body: Math.pow(LEVEL_BASE, levels.body),
+    }),
+  );
+}
 
-  const w = normalizeWeights({
-    money: 1 + 2 * hits.money.length,
-    time: 1 + 2 * hits.time.length,
-    body: 1 + 2 * hits.body.length,
-  });
-  const reason = (Object.keys(hits) as (keyof Weights)[])
-    .filter((k) => hits[k].length)
-    .map((k) => `${hits[k].map((h) => `“${h}”`).join(", ")} → ${LABEL[k]}`)
-    .join(", ");
-  return { ...w, reason: `키워드 분석: ${reason}`, source: "keyword" };
+/** 근거 인용문이 원문에 실제로 있는지 검사 (공백·문장부호 차이는 무시) */
+export function quoteExists(text: string, quote: string): boolean {
+  const squash = (s: string) => s.replace(/[\s.,!?~"'“”‘’·…]/g, "");
+  const q = squash(quote);
+  return q.length >= 2 && squash(text).includes(q);
+}
+
+/** 근거 목록 → 한 줄 문구. 예: “학점 관리” → 시간↑, “돈은 괜찮아요” → 돈↓ */
+export function evidenceText(evidence: Evidence[]) {
+  return evidence.map((e) => `“${e.quote}” → ${AXIS_LABEL[e.axis]}${e.dir === "+" ? "↑" : "↓"}`).join(", ");
 }

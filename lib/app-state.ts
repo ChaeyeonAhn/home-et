@@ -1,5 +1,5 @@
 import {
-  DEFAULT_COSTS, DEFAULT_WEIGHTS, MIN_WAGE_2026, toPercents,
+  DEFAULT_COSTS, DEFAULT_WEIGHTS, MIN_WAGE_2026, clampPercents, toPercents,
   type Commute, type LivingCosts, type Percents,
 } from "./calc";
 import { SCHOOLS, findSchool, type Region } from "./data";
@@ -108,6 +108,15 @@ export function loadState(key = STORAGE_KEY): AppState | null {
       if (parsed.goal === OLD_DEFAULT_GOAL) delete parsed.goal;
       else parsed.goalTags = [];
     }
+    // v1 저장값: 분석 결과 형태가 다르고(source "gemini", 근거 목록 없음) 가중치 범위가 [5, 90]
+    if (parsed.analysis && !Array.isArray(parsed.analysis.evidence)) {
+      const old = parsed.analysis as unknown as { source?: string };
+      parsed.analysis = {
+        ...parsed.analysis, levels: null, evidence: [], confidence: "low",
+        source: old.source === "gemini" ? "llm" : parsed.analysis.source,
+      };
+    }
+    if (parsed.pct) parsed.pct = clampPercents(parsed.pct);
     return { ...INITIAL, ...parsed, commute: { ...INITIAL.commute, ...parsed.commute }, costs: { ...INITIAL.costs, ...parsed.costs } };
   } catch {
     return null;

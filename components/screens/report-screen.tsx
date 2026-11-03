@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import type { AppState } from "@/lib/app-state";
-import { rebalance, type LivingCosts } from "@/lib/calc";
+import { MAX_PCT, MIN_PCT, rebalance, type LivingCosts } from "@/lib/calc";
 import { WEIGHT_LABELS, reportModel } from "@/lib/view-models";
 import { cx } from "@/components/ui/styles";
 import {
@@ -26,6 +26,7 @@ export function ReportScreen({
   const tone = m.recommended ? "primary" : "accent";
   const scoreRef = useRef<HTMLDivElement>(null);
   const pinned = useScrolledPast(scoreRef);
+  const index = useTweened(m.indexPct).toFixed(1); // 가치관을 바꾸면 지수가 0.3초 동안 따라 움직임
 
   return (
     <div className="space-y-5">
@@ -39,7 +40,7 @@ export function ReportScreen({
       >
         <div className="flex items-center gap-2 rounded-full border border-border bg-surface/95 py-1.5 pl-4 pr-1.5 text-sm shadow-sm backdrop-blur">
           <span className="text-fg-sub">자취지수</span>
-          <b className={cx("text-base tabular-nums", tone === "primary" ? "text-primary" : "text-accent")}>{m.index}</b>
+          <b className={cx("text-base tabular-nums", tone === "primary" ? "text-primary" : "text-accent")}>{index}</b>
           <Badge tone={tone}>{m.verdict}</Badge>
         </div>
       </div>
@@ -49,7 +50,7 @@ export function ReportScreen({
           <Card className="h-full">
             <CardTitle aside={<Badge tone={tone}>{m.verdict}</Badge>}>{m.title}</CardTitle>
             <div className="mt-4">
-              <BigNumber value={m.index} unit="/ 100" />
+              <BigNumber value={index} unit="/ 100" />
             </div>
             <div className="mt-5 space-y-3">
               <Meter value={m.indexPct} tone={tone} size="sm" marker />
@@ -126,6 +127,8 @@ export function ReportScreen({
               <Slider
                 key={key}
                 label={label}
+                min={MIN_PCT}
+                max={MAX_PCT}
                 value={state.pct[key]}
                 display={`${state.pct[key]}%`}
                 onChange={(v) => update({ pct: rebalance(state.pct, key, v) })}
@@ -212,10 +215,36 @@ function Assumptions({ costs, onChange }: { costs: LivingCosts; onChange: (patch
         />
       </Field>
       <FinePrint className="col-span-2 md:col-span-3">
-        자취 후 왕복 20분, 학기 32주(방학 포함 월평균), 피로 계수 = 0.15 + 0.1 × 환승 횟수(최대 0.5)로 계산해요. 모두 팀 확정 전 초안이에요.
+        자취 후 왕복 20분, 학기 32주(방학 포함 월평균), 피로 계수 = 0.15 + 0.1 × 환승 횟수(최대 0.5), 가치관 배율 = (3 × 가중치)^0.5로 계산해요. 모두 팀 확정 전 초안이에요.
       </FinePrint>
     </Panel>
   );
+}
+
+/** 값이 바뀌면 ms 동안 ease-out으로 따라가는 숫자 (모션 줄이기 설정이면 바로 바뀜) */
+function useTweened(target: number, ms = 300) {
+  const [shown, setShown] = useState(target);
+  const from = useRef(target);
+  useEffect(() => {
+    const start = from.current;
+    if (start === target || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      from.current = target;
+      setShown(target);
+      return;
+    }
+    const t0 = performance.now();
+    let raf = 0;
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - t0) / ms);
+      const v = start + (target - start) * (1 - Math.pow(1 - p, 3));
+      from.current = v;
+      setShown(v);
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, ms]);
+  return shown;
 }
 
 /** 요소가 sticky 헤더 뒤로 완전히 지나갔는지 */

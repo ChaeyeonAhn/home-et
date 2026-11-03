@@ -32,7 +32,6 @@ export function reportModel(state: AppState, name: string | null) {
 
   return {
     title: name ? `${name} 님의 자취지수` : "내 자취지수",
-    index: r.index.toFixed(1),
     indexPct: r.index,
     recommended,
     verdict: recommended ? "자취 추천" : "다시 생각해 보기",
@@ -68,8 +67,8 @@ export function reportModel(state: AppState, name: string | null) {
     isAiValue: !!aiPct && WEIGHT_LABELS.every(({ key }) => aiPct[key] === state.pct[key]),
     reason: state.analysis
       ? {
-          text: `${state.analysis.source === "gemini" ? "AI 분석 근거: " : ""}${state.analysis.reason}`,
-          fallbackNote: state.analysis.source !== "gemini" ? "Gemini API에 연결하지 못해 대체 분석을 썼어요." : null,
+          text: `${state.analysis.source === "llm" ? "AI 분석 근거: " : ""}${state.analysis.reason}`,
+          fallbackNote: state.analysis.source !== "llm" ? "Gemini API에 연결하지 못해 대체 분석을 썼어요." : null,
         }
       : null,
     stayMessage: `${name ? `${name} 님, ` : ""}리포트는 이 기기에 저장돼요. 등교일이나 시간표가 바뀌면 다시 계산해 보세요. 마음이 바뀌면 언제든 “${nextLabel}”로 넘어갈 수 있어요.`,
@@ -79,7 +78,6 @@ export function reportModel(state: AppState, name: string | null) {
 // ── ③ 월세 추천 ─────────────────────────────
 function rentMessage(cap: number, region: Region) {
   const median = man(region.rentMedian, 0);
-  if (!Number.isFinite(cap)) return "돈 가중치가 0이라 상한이 없어요. 가치관 슬라이더를 다시 확인해 주세요.";
   if (cap <= 0)
     return `지금 가치관 기준으로는 ${region.name}에서 어떤 월세를 내도 통학보다 손해예요. 리포트에서 가치관을 다시 살펴보거나 통학을 이어가는 것도 방법이에요.`;
   if (cap >= region.rentMedian * 1.5)
@@ -102,8 +100,7 @@ export function rentModel(state: AppState, name: string | null) {
   const isCustom = region.id === "custom";
   const costs: LivingCosts = { ...state.costs, rent: region.rentMedian, mgmt: region.mgmtMedian };
   const r = compute(state.commute, costs, fromPercents(state.pct), region.oneWayMin * 2, regionFare(region));
-  const finite = Number.isFinite(r.rentCap);
-  const cap = man(Math.max(0, r.rentCap));
+  const cap = man(Math.max(0, r.rentCap)); // 돈 가중치 ≥ 15%라 항상 유한
   const example = isCustom ? undefined : "(예시 데이터)";
 
   return {
@@ -112,8 +109,7 @@ export function rentModel(state: AppState, name: string | null) {
     isCustom,
     regions: school.regions,
     title: name ? `${name} 님의 적정 월세 상한` : "나의 적정 월세 상한",
-    capText: finite ? cap : "제한 없음",
-    hasCap: finite,
+    capText: cap,
     message: rentMessage(r.rentCap, region),
     breakdown: [
       { label: "내 시간·체력 가치 기준 지불 의향", value: man(r.willingness) },

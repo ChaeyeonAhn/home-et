@@ -70,14 +70,12 @@ export function RentScreen({
         <Card className="lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start">
           <CardTitle>{m.title}</CardTitle>
           <div className="mt-3">
-            <BigNumber value={m.capText} unit={m.hasCap ? "/ 월 이하" : undefined} tone="primary" size="lg" />
+            <BigNumber value={m.capText} unit="/ 월 이하" tone="primary" size="lg" />
           </div>
           <Callout className="mt-4">{m.message}</Callout>
-          {m.hasCap && (
-            <div className="mt-4">
-              <StatList rows={m.breakdown} />
-            </div>
-          )}
+          <div className="mt-4">
+            <StatList rows={m.breakdown} />
+          </div>
           <FinePrint className="mt-4">{m.weightsNote}</FinePrint>
         </Card>
 

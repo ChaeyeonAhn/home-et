@@ -34,7 +34,7 @@ export function Meter({
   const pct = Math.max(0, Math.min(100, value));
   return (
     <div className={cx(styles.meter.track, styles.meter.size[size])} aria-hidden>
-      <div className={cx("h-full rounded-full transition-all", styles.meter.fill[tone])} style={{ width: `${Math.max(2, pct)}%` }} />
+      <div className={cx("h-full rounded-full transition-all duration-300 ease-out", styles.meter.fill[tone])} style={{ width: `${Math.max(2, pct)}%` }} />
       {marker && <div className={styles.meter.marker} />}
     </div>
   );
