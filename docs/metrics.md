@@ -16,7 +16,7 @@
 | `h` | 배차 간격(분). 대기 여유 시간으로 하루 1회 반영. **현재는 입력 질문을 없애고 0으로 고정**(Google 경로 시간에 환승 대기가 포함됨) | `headwayMin` |
 | `F` | 통학 왕복 교통비 | `roundTripFare` |
 | `d` | 주당 등교일 | `daysPerWeek` |
-| `w` | 내 1시간의 기준 시급 (기본 2026 최저임금 10,320원) | `hourlyWage` |
+| `w` | 1시간의 기준 시급. **입력 질문을 없애고 2026 최저임금 10,320원으로 고정**. 개인차는 가치관 배수가 반영(`myHourValue = w·(m_t + f·m_b)/m_m`, 3-6 참고) | `hourlyWage` |
 | `R` | 월세 | `rent` |
 | `M` | 관리비 | `mgmt` |
 | `Lv` | 추가 생활비 | `living` |
@@ -110,6 +110,7 @@ c_t = 50·m_t·G_t / S    c_b = 50·m_b·G_b / S    c_m = −50·m_m·ΔC / S
 ```
 W            = (m_t·G_t + m_b·G_b) / m_m
 myHourValue  = W / ΔH            (ΔH = 0 이면 0)     "내가 매기는 1시간의 가치"
+             = w·(m_t + f·m_b) / m_m              // W = w·ΔH·(m_t + f·m_b)/m_m 이므로. w = 최저임금 고정
 buyBackPrice = ΔC / ΔH           (ΔH = 0 이면 0)     "자취로 1시간을 되사는 가격"
 ```
 

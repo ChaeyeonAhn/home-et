@@ -83,7 +83,11 @@ export function ReportScreen({
               {m.bars.map((b) => (
                 <LabeledMeter key={b.label} {...b} />
               ))}
-              <p className="text-sm text-fg-sub">{m.summary}</p>
+              <p className="text-sm text-fg-sub">
+                내 1시간의 가치: {m.hourBasis}
+                <br />
+                {m.summary}
+              </p>
             </div>
           ) : (
             <p className="text-lg font-bold">자취 후 통학 시간이 지금보다 줄지 않아서, 되찾는 시간이 없어요.</p>
