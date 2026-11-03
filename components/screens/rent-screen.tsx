@@ -1,7 +1,9 @@
 "use client";
 
+import { AdvancedMarker, Map as GoogleMap, Pin } from "@vis.gl/react-google-maps";
 import type { AppState } from "@/lib/app-state";
-import type { Region } from "@/lib/data";
+import type { Region, School } from "@/lib/data";
+import { MAPS_KEY } from "@/components/providers";
 import { rentModel } from "@/lib/view-models";
 import {
   ActionBar, BigNumber, Button, Callout, Card, CardTitle, Chip, ChipGroup, Field, FinePrint,
@@ -82,7 +84,16 @@ export function RentScreen({
         </Card>
 
         <Card className="lg:col-start-1 lg:row-start-2">
-          <MapEmbed src={m.map.src} title={m.map.title} />
+          {MAPS_KEY ? (
+            <RegionMap
+              school={m.school}
+              regions={m.regions}
+              selectedId={state.regionId}
+              onPick={(rg) => update({ regionId: rg.id, leaseRent: rg.rentMedian })}
+            />
+          ) : (
+            <MapEmbed src={m.map.src} title={m.map.title} />
+          )}
           <div className="mt-3">
             <InlineStats items={m.stats} />
           </div>
@@ -104,7 +115,52 @@ export function RentScreen({
   );
 }
 
-/** 지도 공급자를 바꿀 때 이 컴포넌트만 교체 (현재 OpenStreetMap 임베드) */
+/**
+ * Google 지도: 학교는 주황 핀, 자취 후보 동네는 이름이 적힌 알약 마커.
+ * 알약 색 규칙은 위쪽 지역 칩과 같음(선택 = primary). 알약을 눌러도 칩과 같은 선택 처리를 함.
+ * AdvancedMarker는 Map ID가 있어야 보임 (지금은 Google 데모 ID)
+ */
+function RegionMap({
+  school, regions, selectedId, onPick,
+}: {
+  school: School;
+  regions: Region[];
+  selectedId: string;
+  onPick: (r: Region) => void;
+}) {
+  return (
+    <div>
+      <div className="h-52 overflow-hidden rounded-panel border border-border bg-surface-muted md:h-72">
+        <GoogleMap
+          defaultCenter={{ lat: school.lat, lng: school.lng }}
+          defaultZoom={14}
+          mapId="DEMO_MAP_ID"
+          gestureHandling="cooperative"
+          disableDefaultUI
+        >
+          <AdvancedMarker position={{ lat: school.lat, lng: school.lng }} title={school.name}>
+            {/* Google 핀은 CSS 변수를 못 읽어서 globals.css의 accent 토큰 값을 그대로 씀 */}
+            <Pin background="#c2510e" borderColor="#8a3608" glyphColor="#ffffff" />
+          </AdvancedMarker>
+          {regions.map((rg) => (
+            <AdvancedMarker key={rg.id} position={{ lat: rg.lat, lng: rg.lng }} title={`${rg.name} 선택`} onClick={() => onPick(rg)}>
+              <span
+                className={`block rounded-full px-3 py-1.5 text-xs font-bold shadow-md ${
+                  rg.id === selectedId ? "bg-primary text-on-primary" : "bg-surface text-fg"
+                }`}
+              >
+                {rg.name}
+              </span>
+            </AdvancedMarker>
+          ))}
+        </GoogleMap>
+      </div>
+      <FinePrint className="mt-1.5 text-right text-[11px]">지도 © Google · 동네 이름을 눌러도 고를 수 있어요</FinePrint>
+    </div>
+  );
+}
+
+/** 브라우저 지도 키가 없을 때 대신 쓰는 OpenStreetMap 임베드 */
 function MapEmbed({ src, title }: { src: string; title: string }) {
   return (
     <div>
