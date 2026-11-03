@@ -7,35 +7,53 @@
  *   bg-primary, text-fg-muted, border-border, rounded-card …
  */
 @theme {
-  /* 브랜드 */
-  --color-primary: #2b2fa6;
-  --color-primary-hover: #22258a;
-  --color-primary-soft: #eceefb;
+  /* 브랜드 — 네이비 + 오렌지 (글래스 리디자인) */
+  --color-primary: #1b2a4a;
+  --color-primary-hover: #0f1a30;
+  --color-primary-soft: rgb(27 42 74 / 0.07); /* 반투명: 유리 위에서도 같은 농도로 보임 */
   --color-on-primary: #ffffff;
-  --color-accent: #c2510e;
-  --color-accent-soft: #fdeee3;
-  --color-on-accent: #ffffff;
+  --color-accent: #a6420a; /* 글자용 오렌지 (밝은 배경 대비 AA) */
+  --color-accent-soft: rgb(194 80 15 / 0.12);
+  --color-accent-fill: #f0a06a; /* 막대·차트 채움 */
+  --color-accent-strong: #e8894d; /* 진한 오렌지 면 (오늘 배지, 지도 핀) */
+  --color-on-accent: #2a1405; /* accent-strong 위 글자 */
 
   /* 글자 */
-  --color-fg: #17181c;
-  --color-fg-sub: #4b5060;
-  --color-fg-muted: #7a7f8c;
+  --color-fg: #16172b;
+  --color-fg-sub: #3e4258;
+  --color-fg-muted: #4a4e66;
 
   /* 면 · 선 */
-  --color-canvas: #f4f5f7; /* 페이지 배경 */
-  --color-surface: #ffffff; /* 카드 */
-  --color-surface-muted: #f5f6f8; /* 입력칸, 안쪽 패널 */
-  --color-surface-subtle: #f8f9fb; /* 용어 카드 */
-  --color-surface-strong: #eceef2; /* 중립 배지 */
-  --color-border: #e5e7eb;
+  --color-canvas: #f5f6f8; /* 페이지 배경 (body::before 블롭이 위에 깔림) */
+  --color-surface: #ffffff; /* 불투명 흰 면 (입력칸, 지도 마커) */
+  --color-surface-muted: rgb(27 42 74 / 0.05); /* 안쪽 패널, 호버 (네이비 틴트) */
+  --color-surface-subtle: rgb(255 255 255 / 0.45); /* 용어 카드 (glass-soft) */
+  --color-surface-strong: rgb(27 42 74 / 0.08); /* 중립 배지 */
+  --color-border: rgb(27 42 74 / 0.12);
+  --color-track: rgb(27 42 74 / 0.08); /* 막대·진행률 바탕 */
+
+  /* 유리 면 */
+  --color-glass: rgb(255 255 255 / 0.58); /* 카드 */
+  --color-glass-bar: rgb(255 255 255 / 0.72); /* 고정 바 (헤더, 하단 버튼 바): 뒤로 글자가 지나가서 더 진하게 */
+  --color-glass-strong: rgb(255 255 255 / 0.9); /* 모달 */
+  --color-glass-border: rgb(255 255 255 / 0.8);
+  --color-glass-highlight: rgb(236 239 246 / 0.75); /* 강조 카드 (네이비 틴트 유리) */
+  --shadow-glass: 0 12px 40px rgb(20 30 55 / 0.1), inset 0 1px 0 rgb(255 255 255 / 0.9);
+  --shadow-cta: 0 10px 24px rgb(27 42 74 / 0.24);
 
   /* 모양 */
+  --radius-sheet: 2rem; /* 질문 화면 큰 유리 면 */
   --radius-card: 1.5rem;
-  --radius-panel: 1rem;
-  --radius-control: 0.75rem;
+  --radius-panel: 1.125rem;
+  --radius-control: 0.875rem;
 
   /* 오버레이 */
-  --color-scrim: rgb(23 24 28 / 0.45);
+  --color-scrim: rgb(22 23 43 / 0.4);
+
+  /* 글자 굵기: 레퍼런스는 제목 800 · 라벨/버튼 700 → bold·semibold를 한 단계씩 올림 */
+  --font-weight-semibold: 700;
+  --font-weight-bold: 800;
+  --tracking-tight: -0.03em;
 
   /* 모션 (motion-safe: 접두사와 함께 씀) */
   --animate-rise: rise 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
@@ -56,8 +74,19 @@
     from { opacity: 0; }
   }
 
-  /* 글꼴 */
-  --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  /* 글꼴 (app/layout.tsx의 next/font가 --font-noto-kr, --font-outfit을 정의) */
+  --font-sans: var(--font-noto-kr), "Noto Sans KR", -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", sans-serif;
+  --font-display: var(--font-outfit), "Outfit", var(--font-sans); /* 로고 */
+}
+
+/* 유리 효과: 배경색·테두리색은 bg-glass / border-glass-border 같은 토큰 클래스로 따로 줌 */
+@utility backdrop-glass {
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  backdrop-filter: blur(22px) saturate(160%);
+}
+@utility backdrop-glass-soft {
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
 }
 
 html {
@@ -67,6 +96,22 @@ html {
 /* 모바일 탭 하이라이트 제거 (눌림 상태는 각 컴포넌트의 active 스타일로) */
 * {
   -webkit-tap-highlight-color: transparent;
+}
+
+/*
+ * 배경 블롭: 레퍼런스의 blur(80px) 원 3개를 radial-gradient로 흉내 (filter: blur보다 가벼움).
+ * fixed라 스크롤해도 유리 카드 뒤에 항상 색이 깔림
+ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(520px 520px at 8% 6%, rgb(175 192 218 / 0.42), transparent 70%),
+    radial-gradient(480px 460px at 96% 38%, rgb(255 178 122 / 0.3), transparent 70%),
+    radial-gradient(600px 440px at 45% 104%, rgb(214 222 235 / 0.55), transparent 70%);
 }
 
 body {
@@ -101,7 +146,7 @@ input[type="range"].ui-slider {
   width: 100%;
   height: 6px;
   border-radius: 999px;
-  background: linear-gradient(to right, var(--color-primary) var(--pct), var(--color-border) var(--pct));
+  background: linear-gradient(to right, var(--color-primary) var(--pct), var(--color-track) var(--pct));
   outline: none;
 }
 input[type="range"].ui-slider::-webkit-slider-thumb {
@@ -131,5 +176,8 @@ input[type="range"].ui-slider::-moz-range-thumb {
 }
 
 input[type="range"].ui-slider:focus-visible::-webkit-slider-thumb {
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 25%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 45%, transparent);
+}
+input[type="range"].ui-slider:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 45%, transparent);
 }

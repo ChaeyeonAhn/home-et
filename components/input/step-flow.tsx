@@ -112,9 +112,15 @@ export function StepFlow({ state, update, onSubmit, loading, onOpenReport }: Inp
         </div>
       )}
 
-      <section className={cx("flex flex-1 flex-col overflow-x-clip bg-surface md:min-h-[600px] md:rounded-card md:border md:border-border", !started && "max-md:hidden")}>
+      {/* 모바일: 배경 위에 바로 (고정 바만 유리), 데스크톱: 큰 유리 시트. 모바일엔 backdrop-filter를 주지 않음 → fixed 하단 바의 기준이 바뀌지 않게 */}
+      <section
+        className={cx(
+          "flex flex-1 flex-col overflow-x-clip md:min-h-[600px] md:rounded-sheet md:border md:border-glass-border md:bg-glass md:shadow-glass md:backdrop-glass",
+          !started && "max-md:hidden",
+        )}
+      >
         {/* 상단: 진행률 막대만. 확인 화면에서 항목을 고치러 온 땐 숨김 (막대가 뒤로 가 보여서 헷갈림) */}
-        <div className="sticky top-[var(--header-h,0px)] z-10 flex h-12 items-center bg-surface px-5 md:static md:h-auto md:rounded-t-card md:px-10 md:pt-8">
+        <div className="sticky top-[var(--header-h,0px)] z-10 flex h-12 items-center px-5 bg-glass-bar backdrop-glass md:bg-transparent md:backdrop-filter-none md:static md:h-auto md:rounded-t-sheet md:px-10 md:pt-8">
           <ProgressBar value={progress} className={cx("flex-1", fromReview && "invisible")} />
         </div>
 
@@ -127,11 +133,11 @@ export function StepFlow({ state, update, onSubmit, loading, onOpenReport }: Inp
         >
           {isReview ? (
             <>
-              <div className="z-[5] -mx-5 bg-surface px-5 pt-4 pb-6 max-md:sticky max-md:top-[calc(var(--header-h,0px)+3rem)] md:mx-0 md:px-0 md:pt-0 md:pb-0">
+              <div className="z-[5] -mx-5 px-5 pt-4 pb-6 bg-glass-bar backdrop-glass md:bg-transparent md:backdrop-filter-none max-md:sticky max-md:top-[calc(var(--header-h,0px)+3rem)] md:mx-0 md:px-0 md:pt-0 md:pb-0">
                 <h1 className="text-[26px] font-bold leading-snug tracking-tight md:text-[30px]">이대로 검사할까요?</h1>
                 <p className="mt-2 text-[15px] text-fg-sub">고칠 항목을 누르면 바로 바꿀 수 있어요.</p>
               </div>
-              <ul className="-mx-5 divide-y divide-border border-y border-border md:mx-0 md:mt-6 md:overflow-hidden md:rounded-panel md:border">
+              <ul className="-mx-5 divide-y divide-border border-y border-border bg-surface/40 md:mx-0 md:mt-6 md:overflow-hidden md:rounded-panel md:border">
                 {QUESTIONS.map((qq, i) => (
                   <li key={qq.id}>
                     <AnswerRow label={qq.label} value={qq.display(state)} onClick={() => edit(i)} />
@@ -142,7 +148,7 @@ export function StepFlow({ state, update, onSubmit, loading, onOpenReport }: Inp
           ) : (
             <>
               {/* 모바일: 질문 제목은 진행률 막대 아래에 고정, 답(목록·입력)만 스크롤 */}
-              <div className="z-[5] -mx-5 bg-surface px-5 pt-4 pb-6 max-md:sticky max-md:top-[calc(var(--header-h,0px)+3rem)] md:mx-0 md:px-0 md:pt-0 md:pb-0">
+              <div className="z-[5] -mx-5 px-5 pt-4 pb-6 bg-glass-bar backdrop-glass md:bg-transparent md:backdrop-filter-none max-md:sticky max-md:top-[calc(var(--header-h,0px)+3rem)] md:mx-0 md:px-0 md:pt-0 md:pb-0">
                 <p className="text-sm font-semibold text-primary">{q.group}</p>
                 <h1 className="mt-1.5 whitespace-pre-line text-[26px] font-bold leading-snug tracking-tight md:text-[30px]">{q.title}</h1>
                 {q.sub && <p className="mt-2 text-[15px] leading-relaxed text-fg-sub">{q.sub}</p>}
@@ -161,7 +167,7 @@ export function StepFlow({ state, update, onSubmit, loading, onOpenReport }: Inp
           )}
         </div>
 
-        <ActionBar keyboardAware desktopClassName="md:items-center md:justify-between md:rounded-b-card md:px-10 md:py-5">
+        <ActionBar keyboardAware desktopClassName="md:items-center md:justify-between md:rounded-b-sheet md:border-primary/8 md:bg-transparent md:px-10 md:py-5">
           {/* 모바일: 왼쪽에 좁게 (첫 질문에선 숨겨서 '다음'이 꽉 차게) */}
           <Button
             variant={desktop ? "ghost" : "secondary"}

@@ -79,7 +79,7 @@ export function HomeEtApp() {
   };
 
   const ready = state.analysis !== null;
-  // 모바일 입력 화면: 로고 헤더만 두고 푸터 없이 꽉 찬 흰 화면 (한 화면 한 질문)
+  // 모바일 입력 화면: 로고 헤더만 두고 푸터 없이 꽉 찬 화면 (한 화면 한 질문)
   const onInput = state.step === 1;
 
   return (
@@ -90,7 +90,7 @@ export function HomeEtApp() {
         className={cx(
           "mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 md:py-12",
           // 남은 높이를 질문 화면에 넘겨서 화면 높이를 넘지 않게
-          onInput && "max-md:flex max-md:flex-col max-md:p-0 max-md:bg-surface",
+          onInput && "max-md:flex max-md:flex-col max-md:p-0",
         )}
       >
         {onInput && (
