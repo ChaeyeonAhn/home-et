@@ -28,7 +28,17 @@ const r = (
   rentMan: number, mgmtMan: number, lat: number, lng: number,
 ): Region => ({ id, name, mode, oneWayMin, rentMedian: rentMan * 10_000, mgmtMedian: mgmtMan * 10_000, lat, lng });
 
-export const SCHOOLS: School[] = [
+/** 두 좌표 사이 직선거리 비교용 값(km²에 비례). 짧은 거리라 위도 보정만 한 평면 근사로 충분 */
+const dist2 = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+  const dLat = a.lat - b.lat;
+  const dLng = (a.lng - b.lng) * Math.cos((a.lat * Math.PI) / 180);
+  return dLat * dLat + dLng * dLng;
+};
+
+/** 동 목록은 학교에서 가까운 순. 첫 번째 동이 기본 선택이 됨 */
+const byDistance = (s: School): School => ({ ...s, regions: [...s.regions].sort((a, b) => dist2(a, s) - dist2(b, s)) });
+
+export const SCHOOLS: School[] = ([
   {
     id: "korea", name: "고려대학교", district: "서울 성북구", lat: 37.5894, lng: 127.0322,
     regions: [
@@ -77,6 +87,6 @@ export const SCHOOLS: School[] = [
       r("hwigyeong", "휘경동", "도보", 15, 45, 5, 37.5893, 127.0618),
     ],
   },
-];
+] satisfies School[]).map(byDistance);
 
 export const findSchool = (id: string) => SCHOOLS.find((s) => s.id === id) ?? SCHOOLS[0];

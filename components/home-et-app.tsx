@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { cx } from "@/components/ui/styles";
 import { INITIAL, STORAGE_KEY, goalText, loadState, saveState, type AppState, type StepNo } from "@/lib/app-state";
 import { DEFAULT_WEIGHTS, toPercents } from "@/lib/calc";
+import { findSchool } from "@/lib/data";
 import { addDays, startOfDay, toInput } from "@/lib/dday";
 import type { WeightAnalysis } from "@/lib/weights";
 import { StepFlow } from "./input/step-flow";
@@ -63,7 +64,9 @@ export function HomeEtApp() {
       });
       if (!res.ok) throw new Error(String(res.status));
       const analysis = (await res.json()) as WeightAnalysis;
-      update({ analysis, pct: toPercents(analysis), decision: null });
+      // 새로 검사하면 맞춤 월세 추천은 학교에서 가장 가까운 동부터 보여 줌 (예전에 고른 동은 초기화)
+      const nearest = findSchool(state.schoolId).regions[0];
+      update({ analysis, pct: toPercents(analysis), decision: null, regionId: nearest.id, leaseRent: nearest.rentMedian });
     } catch {
       update({
         analysis: { ...DEFAULT_WEIGHTS, reason: "분석 서버에 연결하지 못해 세 기준을 똑같이 두었어요.", source: "default" },
@@ -81,7 +84,8 @@ export function HomeEtApp() {
 
   return (
     <>
-      <Header step={state.step} canVisit={(no) => no === 1 || ready} onNavigate={go} minimalMobile={onInput} />
+      {/* 상단 메뉴로는 지금·이전 단계로만. 다음 단계는 각 화면의 버튼(검사 시작 → 그래도 자취하기 → 계약 일정 등록)으로만 넘어감 */}
+      <Header step={state.step} canVisit={(no) => no <= state.step} onNavigate={go} minimalMobile={onInput} />
       <main
         className={cx(
           "mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 md:py-12",
@@ -97,7 +101,8 @@ export function HomeEtApp() {
             update={update}
             onSubmit={analyze}
             loading={loading}
-            onOpenReport={ready ? () => go(2) : undefined}
+            // '지난 결과' 바로가기는 1단계를 건너뛰게 되므로 끔 (1단계를 마쳐야 2단계로)
+            onOpenReport={undefined}
           />
         )}
         {state.step === 2 && ready && (
