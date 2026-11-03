@@ -101,7 +101,8 @@ export function schoolPatch(s: AppState, id: string): Partial<AppState> {
   };
 }
 
-const OLD_DEFAULT_GOAL = "학점 관리를 제대로 하고 싶고, 통학 때문에 동아리를 못 해서 아쉬워요. 그래도 부모님께 부담은 덜 드리고 싶어요.";
+const OLD_DEFAULT_INITIAL_TOTAL = 1_650_000;
+const OLD_DEFAULT_GOAL ="학점 관리를 제대로 하고 싶고, 통학 때문에 동아리를 못 해서 아쉬워요. 그래도 부모님께 부담은 덜 드리고 싶어요.";
 
 export const STORAGE_KEY = "home-et:v1";
 export function loadState(key = STORAGE_KEY): AppState | null {
@@ -114,6 +115,8 @@ export function loadState(key = STORAGE_KEY): AppState | null {
       if (parsed.goal === OLD_DEFAULT_GOAL) delete parsed.goal;
       else parsed.goalTags = [];
     }
+    // 초기 비용 기본값 165만 → 80만. 예전 기본값 그대로면 새 기본값으로, 직접 고친 값은 유지
+    if (parsed.costs?.initialTotal === OLD_DEFAULT_INITIAL_TOTAL) parsed.costs.initialTotal = DEFAULT_COSTS.initialTotal;
     return {
       ...INITIAL,
       ...parsed,

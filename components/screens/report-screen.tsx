@@ -89,7 +89,7 @@ export function ReportScreen({
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)]">
         <Card>
-          <CardTitle meta="방학 포함 월평균">한 달 기준 비교</CardTitle>
+          <CardTitle meta="학기 중 한 달">한 달 기준 비교</CardTitle>
           <div className="mt-5 grid gap-6 sm:grid-cols-2">
             <div className="space-y-2">
               <SectionLabel tone="primary">자취하면 되찾는 것</SectionLabel>
@@ -212,7 +212,7 @@ function Assumptions({ costs, onChange }: { costs: LivingCosts; onChange: (patch
         />
       </Field>
       <FinePrint className="col-span-2 md:col-span-3">
-        자취 후 왕복 20분, 학기 32주(방학 포함 월평균), 피로 계수 = 0.15 + 0.1 × 환승 횟수(최대 0.5)로 계산해요. 모두 팀 확정 전 초안이에요.
+        자취 후 왕복 20분, 한 달 = 주당 등교일 × 4.3일(학기 중 기준), 피로 계수 = 0.15 + 0.1 × 환승 횟수(최대 0.5)로 계산해요. 모두 팀 확정 전 초안이에요.
       </FinePrint>
     </Panel>
   );
