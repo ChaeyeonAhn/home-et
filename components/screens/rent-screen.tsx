@@ -80,7 +80,8 @@ export function RentScreen({
               <StatList rows={m.breakdown} />
             </div>
           )}
-          <FinePrint className="mt-4">{m.weightsNote}</FinePrint>
+          {m.depositNote && <FinePrint className="mt-4">{m.depositNote}</FinePrint>}
+          <FinePrint className="mt-2">{m.weightsNote}</FinePrint>
         </Card>
 
         <Card className="lg:col-start-1 lg:row-start-2">
