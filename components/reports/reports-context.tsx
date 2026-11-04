@@ -73,7 +73,7 @@ interface ReportsCtx {
   isSaved: boolean;
   /** 저장 리포트를 열어서 고치는 중이면 그 리포트 (덮어쓰기 대상) */
   editing: SavedReportMeta | null;
-  /** 저장 안 된 검사 결과가 있는지 (다른 리포트를 열기 전에 확인) */
+  /** 결과 화면(2~4단계)에서 저장 안 된 결과를 보고 있는지 (다른 리포트를 열기 전에 확인). 시작 화면에선 묻지 않음 */
   hasUnsaved: boolean;
   dialog: { open: boolean; notice: string | null };
   openDialog: (notice?: string) => void;
@@ -140,7 +140,7 @@ export function ReportsProvider({
   const isSaved = !!ref && ref.hash === hash;
   const editing = (ref && list?.find((r) => r.id === ref.id)) || null;
   const full = (list?.length ?? 0) >= MAX_REPORTS;
-  const hasUnsaved = state.analysis !== null && !isSaved;
+  const hasUnsaved = state.step !== 1 && state.analysis !== null && !isSaved;
 
   const run = useCallback(
     async (fn: () => Promise<void>) => {

@@ -32,7 +32,7 @@ export function SaveReportPanel() {
             {r.isSaved
               ? "지금 보고 있는 리포트가 저장돼 있어요."
               : r.editing
-                ? <>저장한 리포트 <b className="text-fg">{r.editing.title}</b>을(를) 고치고 있어요.</>
+                ? <>저장한 리포트 <b className="text-fg">{r.editing.title}</b> 내용을 고치고 있어요.</>
                 : "가치관이나 가정값을 바꿔 가며 비교해 보고, 마음에 드는 결과를 저장해 두세요."}
           </p>
           <div className="flex flex-wrap gap-2">
@@ -115,7 +115,7 @@ export function MyReportsDialog() {
           </>
         }
       >
-        지금 보고 있는 결과는 저장되지 않았어요. <b className="text-fg">{pendingOpen.title}</b>을(를) 불러오면 지금 입력은 사라져요.
+        지금 보고 있는 결과는 저장되지 않았어요. <b className="text-fg">{pendingOpen.title}</b> 리포트를 불러오면 지금 결과는 사라져요.
       </Dialog>
     );
   }
