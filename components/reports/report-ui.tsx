@@ -36,7 +36,8 @@ export function SaveReportPanel() {
                 ? <>저장한 리포트 <b className="text-fg">{r.editing.title}</b> 내용을 고치고 있어요.</>
                 : "가치관이나 가정값을 바꿔 가며 비교해 보고, 마음에 드는 결과를 저장해 두세요."}
           </p>
-          <div className="flex flex-wrap gap-2">
+          {/* 버튼 하나면 전체 너비, 두 개(덮어쓰기·새로 저장)면 반씩 나눠 채움 */}
+          <div className="flex gap-2 [&>*]:flex-1">
             {r.isSaved ? (
               <Button variant="secondary" disabled>
                 저장됨 ✓
