@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { ActionBar, Button, Dialog, useIsDesktop } from "@/components/ui";
 import { cx } from "@/components/ui/styles";
 import { HeroEditor, QUESTIONS } from "./questions";
@@ -10,7 +10,6 @@ import { MAX_REPORTS } from "@/lib/saved-reports";
 import { AnswerRow, IntroFeatures, ProgressBar, SideIntro, allValid, type InputFlowProps } from "./shared";
 
 const N = QUESTIONS.length;
-const AUTO_NEXT_MS = 220; // 선택 피드백을 잠깐 보여 준 뒤 넘어감
 
 /** 로그인하고 돌아와서 바로 질문을 시작하라는 표시 (?start=1) */
 const START_PARAM = "start";
@@ -25,10 +24,8 @@ export function StepFlow({ state, update, onSubmit, loading, started, onStart: m
   const [dir, setDir] = useState<1 | -1>(1);
   const [reached, setReached] = useState(returning ? N : 0);
   const [fromReview, setFromReview] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const desktop = useIsDesktop();
 
-  useEffect(() => () => void (timer.current && clearTimeout(timer.current)), []);
 
   const begin = () => {
     setAskLogin(false);
@@ -53,7 +50,6 @@ export function StepFlow({ state, update, onSubmit, loading, started, onStart: m
   const valid = isReview ? allValid(state) : q.valid(state);
 
   const goTo = (i: number, d: 1 | -1) => {
-    if (timer.current) clearTimeout(timer.current);
     setDir(d);
     setIdx(i);
     setReached((r) => Math.max(r, i));
@@ -73,10 +69,6 @@ export function StepFlow({ state, update, onSubmit, loading, started, onStart: m
       return goTo(N, 1);
     }
     if (idx > 0) goTo(idx - 1, -1);
-  };
-  const autoNext = () => {
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(next, AUTO_NEXT_MS);
   };
   const edit = (i: number) => {
     setFromReview(isReview);
@@ -204,7 +196,8 @@ export function StepFlow({ state, update, onSubmit, loading, started, onStart: m
                   update={update}
                   autoFocus={desktop} // 모바일은 자동 포커스 X: 화면마다 키보드가 올라오며 하단 바가 들썩임
                   shortcuts={desktop}
-                  onDone={q.kind === "choice" ? autoNext : next}
+                  // 고르는 질문은 골라도 바로 넘어가지 않음 (잘못 눌렀을 때 되돌아오지 않게) → '다음'으로 넘어감
+                  onDone={q.kind === "choice" ? undefined : next}
                 />
               </div>
             </>

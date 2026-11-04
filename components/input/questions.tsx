@@ -23,7 +23,7 @@ export interface Question {
   label: string; // 요약 목록용 짧은 이름
   title: string; // \n 줄바꿈 허용
   sub?: string;
-  /** choice = 고르면 끝 (자동으로 다음), input = 입력 후 Enter/다음 */
+  /** choice = 목록에서 고르기, input = 직접 입력 (Enter로 다음). 둘 다 '다음'을 눌러야 넘어감 */
   kind: "choice" | "input";
   display: (s: AppState) => string;
   valid: (s: AppState) => boolean;
