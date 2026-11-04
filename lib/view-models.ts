@@ -103,7 +103,7 @@ export function reportModel(state: AppState, name: string | null) {
           fallbackNote: state.analysis.source !== "gemini" ? "Gemini API에 연결하지 못해 대체 분석을 썼어요." : null,
         }
       : null,
-    stayMessage: `${name ? `${name} 님, ` : ""}리포트는 이 기기에 저장돼요. 등교일이나 시간표가 바뀌면 다시 계산해 보세요. 마음이 바뀌면 언제든 “${nextLabel}”로 넘어갈 수 있어요.`,
+    stayMessage: `등교일이나 시간표가 바뀌면 다시 계산해 보세요. 마음이 바뀌면 언제든 “${nextLabel}”로 넘어갈 수 있어요.`,
   };
 }
 

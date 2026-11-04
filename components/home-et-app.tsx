@@ -9,6 +9,8 @@ import { addDays, startOfDay, toInput } from "@/lib/dday";
 import type { WeightAnalysis } from "@/lib/weights";
 import { StepFlow } from "./input/step-flow";
 import { useAuth } from "./providers";
+import { MyReportsDialog } from "./reports/report-ui";
+import { ReportsProvider, clearSavedRef } from "./reports/reports-context";
 import { DdayScreen } from "./screens/dday-screen";
 import { RentScreen } from "./screens/rent-screen";
 import { ReportScreen } from "./screens/report-screen";
@@ -19,19 +21,35 @@ export function HomeEtApp() {
   const [state, setState] = useState<AppState>(INITIAL);
   const [today, setToday] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);
+  const [started, setStarted] = useState(false); // 시작 화면(소개)을 지났는지
+  const [runId, setRunId] = useState(0); // 검사(가치관 분석)를 새로 할 때마다 +1
+  const markStarted = useCallback(() => setStarted(true), []);
   const auth = useAuth();
   const name = auth.status === "authenticated" ? auth.name : null;
 
   // 마운트 후 저장된 상태 복원 + 날짜 기본값 (서버 렌더와 어긋나지 않게 클라이언트에서만)
   useEffect(() => {
     const now = startOfDay(new Date());
+    const params = new URLSearchParams(window.location.search);
+    // 로그아웃하고 돌아옴: 이 기기에 남은 입력(본가 주소·목표 글 등)과 저장 리포트 연결을 비우고 시작 화면으로
+    // (공용 기기에서 다음 사람에게 이전 결과가 보이지 않게)
+    const loggedOut = params.has("logout");
+    if (loggedOut) {
+      clearSavedRef();
+      params.delete("logout");
+      const qs = params.toString();
+      window.history.replaceState(null, "", window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash);
+    }
     // 입력 방식 비교 때 A(/step)가 따로 쓰던 저장값도 이어받음
-    const saved = loadState(STORAGE_KEY) ?? loadState(`${STORAGE_KEY}:step`) ?? INITIAL;
+    const saved = loggedOut ? INITIAL : (loadState(STORAGE_KEY) ?? loadState(`${STORAGE_KEY}:step`) ?? INITIAL);
     const contract = saved.contract || toInput(addDays(now, 5));
     const balance = saved.balance || toInput(addDays(now, 41));
+    // 시작 화면에서 로그인하고 돌아온 경우(?reports=1 목록 열기, ?start=1 검사 시작)엔
+    // 마지막으로 보던 단계(리포트 등)를 복원하지 않고 시작 화면에서 이어 감
+    const fromLanding = params.has("reports") || params.has("start");
     // eslint-disable-next-line react-hooks/set-state-in-effect -- 브라우저 전용 값(localStorage, 오늘 날짜)으로 초기화
     setToday(now);
-    setState({ ...saved, contract, balance });
+    setState({ ...saved, contract, balance, ...(fromLanding && { step: 1 as const }) });
   }, []);
 
   useEffect(() => {
@@ -56,6 +74,7 @@ export function HomeEtApp() {
 
   const analyze = async () => {
     setLoading(true);
+    setRunId((n) => n + 1);
     try {
       const res = await fetch("/api/weights", {
         method: "POST",
@@ -78,14 +97,31 @@ export function HomeEtApp() {
     }
   };
 
+  // 저장된 리포트 열기: 그 입력으로 통째로 바꾸고 리포트 화면으로
+  const loadReport = useCallback((s: AppState) => {
+    setState(s);
+    window.scrollTo({ top: 0 });
+  }, []);
+
   const ready = state.analysis !== null;
   // 모바일 입력 화면: 로고 헤더만 두고 푸터 없이 꽉 찬 화면 (한 화면 한 질문)
   const onInput = state.step === 1;
 
   return (
-    <>
+    <ReportsProvider state={state} ready={today !== null} onLoad={loadReport} runId={runId}>
       {/* 상단 메뉴로는 지금·이전 단계로만. 다음 단계는 각 화면의 버튼(검사 시작 → 그래도 자취하기 → 계약 일정 등록)으로만 넘어감 */}
-      <Header step={state.step} canVisit={(no) => no <= state.step} onNavigate={go} minimalMobile={onInput} />
+      <Header
+        step={state.step}
+        canVisit={(no) => no <= state.step}
+        onNavigate={go}
+        onHome={() => {
+          // 로고: 입력은 그대로 두고 시작 화면(소개 + 기존 리포트 보기 / 검사 시작)으로
+          setStarted(false);
+          go(1);
+        }}
+        minimalMobile={onInput}
+        hideSteps={onInput && !started}
+      />
       <main
         className={cx(
           "mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 md:py-12",
@@ -101,8 +137,8 @@ export function HomeEtApp() {
             update={update}
             onSubmit={analyze}
             loading={loading}
-            // '지난 결과' 바로가기는 1단계를 건너뛰게 되므로 끔 (1단계를 마쳐야 2단계로)
-            onOpenReport={undefined}
+            started={started}
+            onStart={markStarted}
           />
         )}
         {state.step === 2 && ready && (
@@ -121,6 +157,7 @@ export function HomeEtApp() {
         {state.step === 4 && ready && today && <DdayScreen state={state} update={update} today={today} onBack={() => go(3)} />}
       </main>
       <Footer className={onInput ? "max-md:hidden" : undefined} />
-    </>
+      <MyReportsDialog />
+    </ReportsProvider>
   );
 }

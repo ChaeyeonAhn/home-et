@@ -108,33 +108,43 @@ export function loadState(key = STORAGE_KEY): AppState | null {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as Partial<AppState> & { pct?: Partial<Adjust> };
-    // 칩 도입 전 저장값: 예전 기본 문장이면 버리고 기본 칩으로, 직접 쓴 글이면 추가 설명으로 유지
-    if (!parsed.goalTags) {
-      if (parsed.goal === OLD_DEFAULT_GOAL) delete parsed.goal;
-      else parsed.goalTags = [];
-    }
-    // 합 1 가중치(pct %) 시절 저장값 → 0 기준 조정값으로
-    if (parsed.pct) {
-      if (!parsed.adj) parsed.adj = fromLegacyWeights(parsed.pct);
-      if (parsed.analysis) parsed.analysis = { ...parsed.analysis, ...fromLegacyWeights(parsed.analysis) };
-      delete parsed.pct;
-    }
-    parsed.adj = sanitizeAdjust(parsed.adj ?? NEUTRAL);
-    // 예전 초기 비용 기본값(165만, 80만: 중개보수 포함)이면 새 기본값(중개보수 제외)으로, 직접 고친 값은 유지
-    if (parsed.costs && LEGACY_INITIAL_TOTALS.includes(parsed.costs.initialTotal ?? -1))
-      parsed.costs.initialTotal = DEFAULT_COSTS.initialTotal;
-    return {
-      ...INITIAL,
-      ...parsed,
-      // 배차 간격·시급 질문이 없어졌으므로 예전에 저장된 값도 고정값으로
-      commute: { ...INITIAL.commute, ...parsed.commute, headwayMin: 0, hourlyWage: MIN_WAGE_2026 },
-      costs: { ...INITIAL.costs, ...parsed.costs },
-    };
+    return migrateState(JSON.parse(raw));
   } catch {
     return null;
   }
 }
+
+/**
+ * 저장값(localStorage·저장된 리포트) → 현재 AppState. 예전 형식을 옮기고 빠진 값은 기본값으로 채운다.
+ * 객체가 아니면 null.
+ */
+export function migrateState(input: unknown): AppState | null {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+  const parsed = { ...(input as Partial<AppState> & { pct?: Partial<Adjust> }) };
+  // 칩 도입 전 저장값: 예전 기본 문장이면 버리고 기본 칩으로, 직접 쓴 글이면 추가 설명으로 유지
+  if (!parsed.goalTags) {
+    if (parsed.goal === OLD_DEFAULT_GOAL) delete parsed.goal;
+    else parsed.goalTags = [];
+  }
+  // 합 1 가중치(pct %) 시절 저장값 → 0 기준 조정값으로
+  if (parsed.pct) {
+    if (!parsed.adj) parsed.adj = fromLegacyWeights(parsed.pct);
+    if (parsed.analysis) parsed.analysis = { ...parsed.analysis, ...fromLegacyWeights(parsed.analysis) };
+    delete parsed.pct;
+  }
+  parsed.adj = sanitizeAdjust(parsed.adj ?? NEUTRAL);
+  // 예전 초기 비용 기본값(165만, 80만: 중개보수 포함)이면 새 기본값(중개보수 제외)으로, 직접 고친 값은 유지
+  const costs = parsed.costs ? { ...parsed.costs } : undefined;
+  if (costs && LEGACY_INITIAL_TOTALS.includes(costs.initialTotal ?? -1)) costs.initialTotal = DEFAULT_COSTS.initialTotal;
+  return {
+    ...INITIAL,
+    ...parsed,
+    // 배차 간격·시급 질문이 없어졌으므로 예전에 저장된 값도 고정값으로
+    commute: { ...INITIAL.commute, ...parsed.commute, headwayMin: 0, hourlyWage: MIN_WAGE_2026 },
+    costs: { ...INITIAL.costs, ...costs },
+  };
+}
+
 export function saveState(s: AppState, key = STORAGE_KEY) {
   try {
     localStorage.setItem(key, JSON.stringify(s));

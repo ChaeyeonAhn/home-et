@@ -9,6 +9,7 @@ import {
   ActionBar, Badge, BigNumber, Button, Callout, Card, CardTitle, Dialog, Em, Field, FinePrint, LabeledMeter,
   LinkButton, Meter, NumberInput, Panel, ScaleLabels, SectionLabel, Slider, StatList,
 } from "@/components/ui";
+import { SaveReportPanel } from "@/components/reports/report-ui";
 
 export function ReportScreen({
   state, update, name, onStay, onGo,
@@ -166,6 +167,8 @@ export function ReportScreen({
           )}
         </Card>
       </div>
+
+      <SaveReportPanel />
 
       <Dialog
         open={stayOpen}

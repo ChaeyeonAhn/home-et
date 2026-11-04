@@ -23,10 +23,12 @@
 
 ## 흐름
 
-1. **정보 입력**: 한 화면에 한 질문씩 학교, 본가, 통학 정보, 등교일, 시급, 대학생활 목표(칩 + 추가 설명)를 받습니다. 모바일은 서비스 소개 시작 화면부터 보여 줍니다.
+1. **정보 입력**: 한 화면에 한 질문씩 학교, 본가, 통학 정보, 등교일, 대학생활 목표(칩 + 추가 설명)를 받습니다. 1시간의 기준 시급은 2026 최저임금으로 고정하고, 개인차는 가치관 조정값이 반영합니다. 모바일은 서비스 소개 시작 화면부터 보여 줍니다.
 2. **자취 적합 리포트**: Gemini가 few-shot 예시를 보고 생활 목표에서 돈·시간·체력 조정값(0 = 보통, −3 ~ +3)을 뽑고, 선형 자취지수(0~100, 50 = 손익분기)를 계산합니다. 0이 가운데인 슬라이더로 항목마다 따로 바꾸면 바로 재계산되고, 점수가 항목별로 몇 점씩 더하고 빼는지 보여 줍니다.
 3. **맞춤 월세 추천**: 자취지수가 50이 되는 월세를 역산해 지역 시세와 비교합니다. 중개보수(법정 상한)를 초기 비용에 넣고, 보증금을 바꾸면 상한이 얼마나 움직이는지도 보여 줍니다.
 4. **계약 D-day**: 계약일·잔금일을 기준으로 단계별 할 일과 용어 카드를 보여 주고, .ics / Google 캘린더로 내보냅니다.
+
+5. **리포트 저장**: Google 로그인 후 리포트를 3개까지 저장하고, '내 리포트'에서 불러와 이어서 고치거나(덮어쓰기·새로 저장) 지울 수 있습니다. 본가 주소와 목표 글도 함께 저장됩니다.
 
 ## 개발
 
@@ -41,6 +43,9 @@ npm run dev
 | `GEMINI_API_KEY` | 가치관 조정값 추출 (`/api/weights`, few-shot) | 키워드 기반 대체 분석 |
 | `GEMINI_MODEL` | 모델 교체 (기본 `gemini-3.8-flash`) | 기본값 |
 | `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google 로그인 (Auth.js) | 로그인 버튼 숨김 |
+| `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` | 리포트 저장 (Firestore, 서버 전용 서비스 계정). 로그인 env와 함께 있어야 켜짐 | 저장 기능 숨김 |
+
+메인 페이지는 빌드 때 미리 렌더링되므로 **env를 바꾸면 재배포**해야 로그인·저장 버튼이 반영됩니다. Firestore 보안 규칙은 `allow read, write: if false;` (서버 API만 접근).
 
 Google OAuth 리디렉션 URI: `http://localhost:3000/api/auth/callback/google`, `https://<배포 도메인>/api/auth/callback/google`
 
@@ -61,8 +66,12 @@ lib/
   data.ts                데모 학교·동별 시세 (예시 데이터)
   dday.ts                계약 D-day 규칙, 용어 카드, 캘린더 내보내기
   weights.ts             few-shot 예시, 키워드 대체 분석
-  app-state.ts           앱 상태 타입, 기본값, localStorage 저장
+  app-state.ts           앱 상태 타입, 기본값, localStorage 저장, 저장값 이전(migrateState)
+  saved-reports.ts       저장 리포트 타입·요약·지문 (공용)
+  reports-repo.ts        Firestore users/{uid}/reports 읽기·쓰기 (서버)
 app/api/weights          Gemini few-shot 가치관 분석
+app/api/reports          리포트 목록·저장·불러오기·덮어쓰기·삭제 (로그인 필요, 3개 제한)
+components/reports/      저장 카드, 내 리포트 Dialog, 상태 컨텍스트
 ```
 
 ## 디자인 바꾸기
