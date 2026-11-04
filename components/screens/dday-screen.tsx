@@ -2,7 +2,7 @@
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import type { AppState } from "@/lib/app-state";
-import { buildIcs, calendarEvents, type Step } from "@/lib/dday";
+import { WRONG_ACCOUNT, buildIcs, calendarEvents, type Step } from "@/lib/dday";
 import { ddayModel, type DdayItem } from "@/lib/view-models";
 import { useAuth } from "@/components/providers";
 import {
@@ -64,10 +64,16 @@ function useGoogleCalendar(steps: Step[], enabled: boolean) {
   const resume = useEffectEvent(() => {
     if (resumed.current) return;
     const url = new URL(window.location.href);
-    if (!url.searchParams.has(RESUME_PARAM)) return;
+    const flag = url.searchParams.get(RESUME_PARAM);
+    if (flag === null) return;
     resumed.current = true;
     url.searchParams.delete(RESUME_PARAM);
     window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+    // 다른 계정을 골라서 서버가 거절함 (기존 로그인은 그대로)
+    if (flag === WRONG_ACCOUNT) {
+      const who = auth.email ? `로그인한 계정(${auth.email})` : "로그인한 계정";
+      return setSync({ kind: "error", message: `다른 Google 계정을 골라서 등록하지 않았어요. ${who}으로 다시 눌러 주세요.` });
+    }
     if (!enabled) return;
     // Google 권한 화면에서 캘린더 항목을 끄고 돌아온 경우
     if (!auth.calendar) setSync({ kind: "error", message: "캘린더 권한이 허용되지 않아 등록하지 못했어요. 다시 누르면 권한을 요청해요." });

@@ -1,6 +1,5 @@
-import { getToken } from "next-auth/jwt";
 import { z } from "zod";
-import { authEnabled } from "@/auth";
+import { authEnabled, readSessionToken } from "@/auth";
 import { CALENDAR_SCOPE, STEP_KEYS } from "@/lib/dday";
 
 // 계약 D-day 일정을 로그인한 사람의 기본 Google 캘린더에 넣는다.
@@ -37,11 +36,7 @@ const reauth = () => Response.json({ error: "reauth" }, { status: 401 });
 
 /** 세션 쿠키 속 Google 토큰. 만료됐으면 refresh token으로 이번 요청에 쓸 새 토큰을 받음 */
 async function accessToken(req: Request): Promise<string | null> {
-  const token = await getToken({
-    req,
-    secret: process.env.AUTH_SECRET,
-    secureCookie: new URL(req.url).protocol === "https:",
-  });
+  const token = await readSessionToken(req);
   if (!token?.scope?.split(" ").includes(CALENDAR_SCOPE)) return null;
   if (token.accessToken && token.expiresAt && token.expiresAt * 1000 > Date.now() + 60_000) return token.accessToken;
   if (!token.refreshToken) return null;

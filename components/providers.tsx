@@ -12,6 +12,7 @@ export interface AuthState {
   status: "loading" | "authenticated" | "unauthenticated";
   name: string | null;
   image: string | null;
+  email: string | null;
   /** 로그인 이동 중 (버튼 연타 방지: 두 번 시작하면 PKCE 값이 꼬여 로그인이 실패함) */
   signingIn: boolean;
   /** callbackUrl: 로그인 후 돌아올 주소 (기본: 지금 페이지) */
@@ -29,6 +30,7 @@ const disabled: AuthState = {
   status: "unauthenticated",
   name: null,
   image: null,
+  email: null,
   signingIn: false,
   signIn: () => {},
   calendar: false,
@@ -72,6 +74,7 @@ function Bridge({ saving, children }: { saving: boolean; children: ReactNode }) 
     status,
     name: data?.user?.name ?? null,
     image: data?.user?.image ?? null,
+    email: data?.user?.email ?? null,
     signingIn,
     signIn: (callbackUrl) => start(callbackUrl),
     calendar: Boolean(data?.calendar),
@@ -80,8 +83,11 @@ function Bridge({ saving, children }: { saving: boolean; children: ReactNode }) 
         scope: `openid email profile ${CALENDAR_SCOPE}`,
         include_granted_scopes: "true",
         access_type: "offline", // 1시간 뒤에도 등록할 수 있게 refresh token 받기
-        // 계정 선택 화면은 기본 로그인과 똑같이 유지(공용 기기 대비) + 매번 동의 화면을 띄워 refresh token 받기
-        prompt: "select_account consent",
+        // 이미 로그인했으면 그 계정으로 바로 (계정 선택 없이). 아니면 기본 로그인처럼 계정 선택부터(공용 기기 대비)
+        // consent: 매번 동의 화면을 띄워 refresh token 받기
+        ...(status === "authenticated" && data?.user?.email
+          ? { login_hint: data.user.email, prompt: "consent" }
+          : { prompt: "select_account consent" }),
       }),
     // 로그아웃하면 어느 화면에 있든 시작 화면으로 (?logout=1 → HomeEtApp이 이 기기의 입력도 비움)
     signOut: () => void signOut({ redirectTo: "/?logout=1" }),

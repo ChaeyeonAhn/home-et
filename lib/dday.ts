@@ -127,6 +127,8 @@ export function googleCalendarUrl(step: Step) {
 
 /** 계약 D-day를 내 Google 캘린더에 바로 넣는 권한. 로그인할 땐 받지 않고, 등록 버튼을 누를 때 따로 요청해요 */
 export const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
+/** 캘린더 권한을 받는 중에 로그인한 계정과 다른 Google 계정을 고르면, 이 표시(?gcal=…)와 함께 돌려보냄 */
+export const WRONG_ACCOUNT = "wrong-account";
 
 /** Google 캘린더 API(/api/calendar)로 보낼 종일 일정. end는 다음 날(배타적) */
 export interface CalendarEvent {
