@@ -45,7 +45,7 @@ export function SaveReportPanel() {
             ) : r.editing ? (
               <>
                 <Button onClick={r.overwrite} disabled={r.busy}>
-                  이 리포트에 덮어쓰기
+                  덮어쓰기
                 </Button>
                 <Button variant="secondary" onClick={r.saveNew} disabled={r.busy || !r.list}>
                   새로 저장
