@@ -6,10 +6,29 @@ import type { RegistryFacts, RiskKind } from "./registry";
 
 /** /api/registry 응답 (화면과 서버가 같이 씀) */
 export interface RegistryResult {
-  source: "text" | "gemini"; // text = PDF 글자 위치로 읽음, gemini = Gemini 문서 이해로 읽음
+  /** text = PDF 글자 위치로 읽음, gemini = Gemini 문서 이해로 읽음, text+gemini = 둘 다 읽어 맞춰 봄 */
+  source: "text" | "gemini" | "text+gemini";
   facts: Omit<RegistryFacts, "entries">;
   signals: Signal[];
   laws: Record<string, { label: string; url: string }>; // 신호에 붙은 조문 id → 이름·법제처 링크
+  differences: string[] | null; // text+gemini일 때 서로 다른 곳 (빈 배열 = 일치)
+}
+
+/**
+ * 두 방식(PDF 글자 판독 · Gemini 문서 이해)으로 읽은 결과 비교.
+ * 위험 신호에 영향을 주는 것만 봄: 소유자·지분, 살아 있는 권리(종류·금액), 살아 있는 갑구 기록
+ */
+export function compareFacts(a: RegistryFacts, b: RegistryFacts): string[] {
+  const diffs: string[] = [];
+  const owners = (f: RegistryFacts) => f.owners.map((o) => `${o.name.replace(/\s/g, "")} ${o.share}`).sort().join(", ");
+  if (owners(a) !== owners(b)) diffs.push("소유자·지분");
+  const rights = (f: RegistryFacts) => new Map(f.rights.filter((r) => !r.cancelled).map((r) => [r.rank, `${r.kind} ${r.amount ?? "?"}`]));
+  const ra = rights(a), rb = rights(b);
+  for (const rank of new Set([...ra.keys(), ...rb.keys()])) if (ra.get(rank) !== rb.get(rank)) diffs.push(`을구 ${rank}번`);
+  const flags = (f: RegistryFacts) => new Map(f.flags.filter((x) => !x.cancelled).map((x) => [x.rank, x.kind]));
+  const fa = flags(a), fb = flags(b);
+  for (const rank of new Set([...fa.keys(), ...fb.keys()])) if (fa.get(rank) !== fb.get(rank)) diffs.push(`갑구 ${rank}번`);
+  return diffs;
 }
 
 export type Level = "high" | "caution" | "info";

@@ -1,7 +1,9 @@
 // 등기부등본 PDF → 구조화(lib/registry.ts) → 위험 신호(lib/registry-rules.ts). docs/registry.md
 //
 // ① 글자가 있는 PDF(인터넷등기소 열람·발급본): unpdf로 글자 위치를 뽑아 표 칸으로 나눔. 키 없이 동작
-// ② 스캔본·사진처럼 글자가 없으면: Gemini 문서 이해로 등기 기록을 JSON으로 뽑음 (GEMINI_API_KEY 필요)
+// ② Gemini 문서 이해: PDF를 그대로 넣어 등기 기록을 JSON으로 뽑음 (GEMINI_API_KEY 필요)
+//    키가 있으면 ①과 동시에 돌려 소유자·살아 있는 권리를 서로 맞춰 봄(교차 검증). 글자가 없는 스캔본은 ②만 씀
+// 말소 여부는 둘 다 "N번…말소" 기록으로만 판단 (Gemini가 빨간 줄을 잘 못 알아보고, 잘못 보면 위험 신호가 숨겨짐)
 // 개인정보가 들어 있어 파일과 내용은 저장하지도, 로그로 남기지도 않음
 import { GoogleGenAI } from "@google/genai";
 import { getDocumentProxy } from "unpdf";
@@ -9,7 +11,7 @@ import { z } from "zod";
 import data from "@/data/law-chunks.json";
 import type { LawChunk } from "@/lib/law-search";
 import { parseRegistry, toFacts, type Entry, type RegistryFacts, type TextItem } from "@/lib/registry";
-import { checkRegistry, type RegistryResult } from "@/lib/registry-rules";
+import { checkRegistry, compareFacts, type RegistryResult } from "@/lib/registry-rules";
 
 export const runtime = "nodejs";
 
@@ -33,7 +35,6 @@ async function textItems(bytes: Uint8Array): Promise<TextItem[]> {
 const GEMINI_PROMPT = `이 문서는 한국 부동산 등기사항전부증명서(등기부등본)야.
 갑구(소유권에 관한 사항)와 을구(소유권 이외의 권리에 관한 사항)의 모든 기록을 순서대로 옮겨 줘.
 - 각 기록: section("갑" 또는 "을"), rank(순위번호, 예 "10", "10-1"), purpose(등기목적), receipt(접수), cause(등기원인), details(권리자 및 기타사항을 줄마다 나눈 배열)
-- 빨간 줄로 그어진 기록은 말소된 것이야. 그 기록은 cancelled를 true로 해.
 - 글자는 보이는 그대로 옮기고, 없는 내용을 만들지 마.
 - 문서 맨 위의 제목(title), 부동산 종류(propertyType: 집합건물/건물/토지), 소재지(address), 열람일시(viewedAt, YYYY-MM-DD)도 넣어 줘.`;
 
@@ -46,9 +47,8 @@ const entrySchema = {
     receipt: { type: "string" },
     cause: { type: "string" },
     details: { type: "array", items: { type: "string" } },
-    cancelled: { type: "boolean" },
   },
-  required: ["section", "rank", "purpose", "receipt", "cause", "details", "cancelled"],
+  required: ["section", "rank", "purpose", "receipt", "cause", "details"],
 };
 const GEMINI_SCHEMA = {
   type: "object",
@@ -74,7 +74,6 @@ const GeminiOut = z.object({
       receipt: z.string(),
       cause: z.string(),
       details: z.array(z.string()),
-      cancelled: z.boolean(),
     }),
   ),
 });
@@ -97,8 +96,8 @@ async function geminiFacts(apiKey: string, bytes: Uint8Array): Promise<RegistryF
     },
   });
   const out = GeminiOut.parse(JSON.parse(res.text ?? ""));
-  const entries: Entry[] = out.entries.map((e) => ({ ...e, purpose: e.purpose.replace(/\s+/g, "") }));
-  // 말소 기록("7번…말소")으로도 한 번 더 표시: Gemini가 빨간 줄을 놓쳐도 잡히게
+  const entries: Entry[] = out.entries.map((e) => ({ ...e, purpose: e.purpose.replace(/\s+/g, ""), cancelled: false }));
+  // 말소 기록("7번…말소")으로 말소 표시 (텍스트 판독과 같은 규칙)
   for (const e of entries) {
     const m = /^(\d+(?:-\d+)?)번.*말소$/.exec(e.purpose);
     if (m) for (const t of entries) if (t.section === e.section && (t.rank === m[1] || t.rank.startsWith(`${m[1]}-`))) t.cancelled = true;
@@ -133,29 +132,35 @@ export async function POST(req: Request) {
     landlord: String(form.get("landlord") ?? "").trim() || null,
   };
 
-  let facts: RegistryFacts | null = null;
-  let source: RegistryResult["source"] = "text";
-  try {
-    const items = await textItems(bytes);
-    const parsed = items.length ? parseRegistry(items) : null;
-    if (parsed && parsed.entries.length) facts = parsed;
-  } catch {
-    // 글자 추출 실패 → 아래에서 Gemini로
-  }
+  const apiKey = process.env.GEMINI_API_KEY;
+  // 두 방식을 동시에: pdf.js가 버퍼를 넘겨받을 수 있어 Gemini에는 복사본을 줌
+  const geminiP = apiKey
+    ? geminiFacts(apiKey, bytes.slice()).catch(() => {
+        console.error("[registry] Gemini 문서 이해 실패"); // 등본 내용은 남기지 않음
+        return null;
+      })
+    : Promise.resolve(null);
 
-  if (!facts) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return Response.json({ error: "글자를 읽을 수 없는 PDF예요. 인터넷등기소에서 열람한 PDF를 그대로 올려 주세요." }, { status: 422 });
-    }
-    try {
-      facts = await geminiFacts(apiKey, bytes);
-      source = "gemini";
-    } catch {
-      console.error("[registry] Gemini 문서 이해 실패"); // 등본 내용은 남기지 않음
-      return Response.json({ error: "등기부등본을 읽지 못했어요. 인터넷등기소에서 열람한 PDF인지 확인해 주세요." }, { status: 422 });
-    }
+  let text: RegistryFacts | null = null;
+  try {
+    const items = await textItems(bytes.slice());
+    const parsed = items.length ? parseRegistry(items) : null;
+    if (parsed && parsed.entries.length) text = parsed;
+  } catch {
+    // 글자 추출 실패 → Gemini 결과만 씀
   }
+  const gemini = await geminiP;
+
+  // 판단은 정해진 칸 위치로 읽은 텍스트 판독을 우선, 없으면 Gemini
+  const facts = text ?? gemini;
+  if (!facts) {
+    const error = apiKey
+      ? "등기부등본을 읽지 못했어요. 인터넷등기소에서 열람한 PDF인지 확인해 주세요."
+      : "글자를 읽을 수 없는 PDF예요. 인터넷등기소에서 열람한 PDF를 그대로 올려 주세요.";
+    return Response.json({ error }, { status: 422 });
+  }
+  const source: RegistryResult["source"] = text && gemini ? "text+gemini" : text ? "text" : "gemini";
+  const differences = text && gemini ? compareFacts(text, gemini) : null;
 
   if (!/등기사항.*증명서/.test(facts.title) && facts.entries.length === 0) {
     return Response.json({ error: "등기사항전부증명서가 아닌 것 같아요." }, { status: 422 });
@@ -164,11 +169,19 @@ export async function POST(req: Request) {
   const { entries: _entries, ...rest } = facts;
   void _entries;
   const signals = checkRegistry(facts, ctx);
+  if (differences?.length) {
+    signals.unshift({
+      level: "caution",
+      title: "두 방식으로 읽은 결과가 달라요",
+      detail: `PDF 글자 판독과 Gemini 문서 이해 결과가 ${differences.length}곳에서 달라요: ${differences.join(" / ")}. 이 부분은 등본 원문을 직접 확인해 주세요.`,
+      laws: [],
+    });
+  }
   const laws: RegistryResult["laws"] = {};
   for (const id of new Set(signals.flatMap((s) => s.laws))) {
     const c = lawById.get(id);
     if (c) laws[id] = { label: `${c.law} ${c.article}${c.title ? `(${c.title})` : ""}`, url: c.url };
   }
-  const result: RegistryResult = { source, facts: rest, signals, laws };
+  const result: RegistryResult = { source, facts: rest, signals, laws, differences };
   return Response.json(result);
 }

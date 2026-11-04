@@ -10,6 +10,15 @@ const LEVEL: Record<Level, { label: string; tone: BadgeTone }> = {
   info: { label: "참고", tone: "neutral" },
 };
 
+const SOURCE_NOTE: Record<RegistryResult["source"], (diff: string[] | null) => string> = {
+  "text+gemini": (diff) =>
+    diff?.length
+      ? "PDF 글자 판독과 Gemini 문서 이해, 두 방식으로 읽었는데 결과가 일부 달라요. "
+      : "PDF 글자 판독과 Gemini 문서 이해, 두 방식으로 읽어 결과가 일치했어요. ",
+  text: () => "PDF의 글자 위치로 읽은 결과예요. ",
+  gemini: () => "Gemini 문서 이해로 읽은 결과예요. ",
+};
+
 const man = (won: number) => `${Math.round(won / 10_000).toLocaleString("ko-KR")}만 원`;
 
 /**
@@ -166,7 +175,7 @@ export function RegistryCheck({ deposit }: { deposit: number }) {
           )}
 
           <FinePrint>
-            {result.source === "gemini" ? "Gemini 문서 이해로 읽은 결과예요. " : "PDF의 글자 위치로 읽은 결과예요. "}
+            {SOURCE_NOTE[result.source](result.differences)}
             등기부등본 원문과 다를 수 있으니 중요한 내용은 원문과 공인중개사 설명으로 꼭 확인하세요. 법률 자문이 아니에요.
           </FinePrint>
           <Button
