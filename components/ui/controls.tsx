@@ -23,6 +23,13 @@ export function Button({
   );
 }
 
+/** 버튼 모양 링크 (외부 페이지 열기 등) */
+export function ButtonAnchor({
+  variant = "primary", size = "md", className, ...props
+}: AnchorHTMLAttributes<HTMLAnchorElement> & { variant?: ButtonVariant; size?: ButtonSize }) {
+  return <a {...props} className={cx(styles.button.base, styles.button.variant[variant], styles.button.size[size], className)} />;
+}
+
 export function TextLink({ className, ...props }: AnchorHTMLAttributes<HTMLAnchorElement>) {
   return (
     <a
