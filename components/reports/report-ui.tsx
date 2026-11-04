@@ -23,7 +23,7 @@ export function SaveReportPanel() {
       {!r.signedIn ? (
         <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-fg-sub">로그인하면 리포트를 {MAX_REPORTS}개까지 저장하고 나중에 다시 열어 볼 수 있어요.</p>
-          <Button onClick={r.signIn} disabled={r.signingIn} aria-busy={r.signingIn}>
+          <Button onClick={() => r.signIn()} disabled={r.signingIn} aria-busy={r.signingIn}>
             {r.signingIn ? "로그인 화면으로 이동 중…" : "Google로 로그인하고 저장"}
           </Button>
         </div>

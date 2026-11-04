@@ -60,7 +60,8 @@ interface ReportsCtx {
   signedIn: boolean;
   /** 로그인 이동 중 (버튼 잠금용) */
   signingIn: boolean;
-  signIn: () => void;
+  /** callbackUrl: 로그인 후 돌아올 주소 (기본: 지금 페이지) */
+  signIn: (callbackUrl?: string) => void;
   /** 기존 리포트 보기: 로그인했으면 목록 열기, 아니면 로그인 후 돌아와서 목록 열기 */
   openReports: () => void;
   /** null = 아직 못 불러옴 */
@@ -237,7 +238,7 @@ export function ReportsProvider({
     enabled,
     signedIn,
     signingIn: auth.signingIn,
-    signIn: () => auth.signIn(),
+    signIn: auth.signIn,
     openReports,
     list,
     busy,
