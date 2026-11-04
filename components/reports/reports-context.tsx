@@ -95,9 +95,11 @@ export function useReports() {
 }
 
 export function ReportsProvider({
-  state, ready, onLoad, children,
+  state, ready, onLoad, runId, children,
 }: {
   state: AppState;
+  /** 새로 검사할 때마다 바뀌는 값. 바뀌면 '저장 리포트를 고치는 중' 표시를 지움 (새 결과는 새로 저장) */
+  runId: number;
   /** localStorage 복원이 끝났는지 (그 전엔 저장 지문을 읽지 않음) */
   ready: boolean;
   /** 저장된 리포트를 현재 상태로 불러오기 */
@@ -124,6 +126,12 @@ export function ReportsProvider({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- 브라우저 전용 값(localStorage)으로 초기화
     if (ready) setRefState(readRef());
   }, [ready]);
+
+  // 새로 검사하면 예전에 열었던·저장했던 리포트와의 연결을 끊음 → '덮어쓰기' 대신 '리포트 저장'만
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 부모의 '새 검사' 신호에 맞춰 한 번 초기화
+    if (runId > 0) setRef(null);
+  }, [runId, setRef]);
 
   const refresh = useCallback(async () => {
     try {

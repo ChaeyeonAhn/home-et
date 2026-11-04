@@ -22,6 +22,7 @@ export function HomeEtApp() {
   const [today, setToday] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);
   const [started, setStarted] = useState(false); // 시작 화면(소개)을 지났는지
+  const [runId, setRunId] = useState(0); // 검사(가치관 분석)를 새로 할 때마다 +1
   const markStarted = useCallback(() => setStarted(true), []);
   const auth = useAuth();
   const name = auth.status === "authenticated" ? auth.name : null;
@@ -64,6 +65,7 @@ export function HomeEtApp() {
 
   const analyze = async () => {
     setLoading(true);
+    setRunId((n) => n + 1);
     try {
       const res = await fetch("/api/weights", {
         method: "POST",
@@ -97,7 +99,7 @@ export function HomeEtApp() {
   const onInput = state.step === 1;
 
   return (
-    <ReportsProvider state={state} ready={today !== null} onLoad={loadReport}>
+    <ReportsProvider state={state} ready={today !== null} onLoad={loadReport} runId={runId}>
       {/* 상단 메뉴로는 지금·이전 단계로만. 다음 단계는 각 화면의 버튼(검사 시작 → 그래도 자취하기 → 계약 일정 등록)으로만 넘어감 */}
       <Header
         step={state.step}
