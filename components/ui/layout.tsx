@@ -2,15 +2,17 @@ import type { ReactNode } from "react";
 import { cx, styles } from "./styles";
 
 export function Card({
-  tone = "default", padding = "md", className, children,
+  tone = "default", padding = "md", className, tour, children,
 }: {
   tone?: keyof typeof styles.card.tone;
   padding?: keyof typeof styles.card.padding;
   className?: string;
+  /** 화면 안내(Spotlight)에서 비출 때 쓰는 이름 */
+  tour?: string;
   children: ReactNode;
 }) {
   return (
-    <section className={cx(styles.card.base, styles.card.tone[tone], styles.card.padding[padding], className)}>
+    <section data-tour={tour} className={cx(styles.card.base, styles.card.tone[tone], styles.card.padding[padding], className)}>
       {children}
     </section>
   );

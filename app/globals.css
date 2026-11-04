@@ -188,3 +188,8 @@ input[type="range"].ui-slider:focus-visible::-webkit-slider-thumb {
 input[type="range"].ui-slider:focus-visible::-moz-range-thumb {
   box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 45%, transparent);
 }
+
+/* 화면 안내(Spotlight)가 대상으로 스크롤할 때 고정 헤더에 가리지 않게 */
+[data-tour] {
+  scroll-margin-top: calc(var(--header-h, 0px) + 1rem);
+}

@@ -7,8 +7,38 @@ import { reportModel } from "@/lib/view-models";
 import { cx } from "@/components/ui/styles";
 import {
   ActionBar, Badge, BigNumber, Button, Callout, Card, CardTitle, Dialog, Em, Field, FinePrint, LabeledMeter,
-  LinkButton, Meter, NumberInput, Panel, ScaleLabels, SectionLabel, Slider, StatList,
+  LinkButton, Meter, NumberInput, Panel, ScaleLabels, SectionLabel, Slider, Spotlight, StatList, useTour,
+  type SpotlightStep,
 } from "@/components/ui";
+
+/** 리포트 화면 안내: 처음 열 때 한 번, 아래 「화면 안내 다시 보기」로 다시 */
+const TOUR: SpotlightStep[] = [
+  {
+    target: "score",
+    title: "나의 자취지수",
+    body: "통학과 자취를 돈·시간·체력으로 비교한 점수예요. 50이 손익분기이고, 높을수록 자취가 이득이에요.",
+  },
+  {
+    target: "hour",
+    title: "통학 1시간의 값",
+    body: "자취하면 통학 1시간을 얼마에 되사는 셈인지, 그리고 내가 1시간을 얼마로 여기는지 나란히 보여 드려요.",
+  },
+  {
+    target: "month",
+    title: "한 달 기준 비교",
+    body: "자취로 되찾는 시간·체력과 더 드는 돈을 비교해요. 월세·생활비 같은 가정값은 「가정값 직접 고치기」에서 바꿀 수 있어요.",
+  },
+  {
+    target: "values",
+    title: "내 가치관으로 조정",
+    body: "AI가 대학생활 목표에서 읽어 낸 값이에요. 지금 슬라이더를 직접 움직여 보세요. 자취지수가 바로 다시 계산돼요.",
+  },
+  {
+    target: "next",
+    title: "다음 단계",
+    body: "자취해 보기로 했다면 손해 안 보는 월세와 동네를 추천받아요.",
+  },
+];
 
 export function ReportScreen({
   state, update, name, onStay, onGo,
@@ -26,6 +56,7 @@ export function ReportScreen({
   const tone = m.recommended ? "primary" : "accent";
   const scoreRef = useRef<HTMLDivElement>(null);
   const pinned = useScrolledPast(scoreRef);
+  const tour = useTour("report", true);
 
   return (
     <div className="space-y-5">
@@ -45,7 +76,7 @@ export function ReportScreen({
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,2.2fr)]">
-        <div ref={scoreRef}>
+        <div ref={scoreRef} data-tour="score">
           <Card className="h-full">
             <CardTitle aside={<Badge tone={tone}>{m.verdict}</Badge>}>{m.title}</CardTitle>
             <div className="mt-4">
@@ -62,7 +93,7 @@ export function ReportScreen({
           </Card>
         </div>
 
-        <Card>
+        <Card tour="hour">
           {m.hasSavedTime ? (
             <div className="space-y-5">
               <p className="text-lg font-bold leading-snug sm:text-xl">
@@ -96,7 +127,7 @@ export function ReportScreen({
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)]">
-        <Card>
+        <Card tour="month">
           <CardTitle meta="학기 중 한 달">한 달 기준 비교</CardTitle>
           <div className="mt-5 grid gap-6 sm:grid-cols-2">
             <div className="space-y-2">
@@ -117,7 +148,7 @@ export function ReportScreen({
           {showAssumptions && <Assumptions note={m.brokerageNote} costs={state.costs} onChange={(patch) => update({ costs: { ...state.costs, ...patch } })} />}
         </Card>
 
-        <Card>
+        <Card tour="values">
           <CardTitle
             aside={
               m.aiAdj && (
@@ -167,6 +198,12 @@ export function ReportScreen({
         </Card>
       </div>
 
+      <div className="flex justify-center md:justify-start">
+        <LinkButton onClick={tour.start} className="font-medium text-fg-sub">
+          화면 안내 다시 보기
+        </LinkButton>
+      </div>
+
       <Dialog
         open={stayOpen}
         onClose={closeStay}
@@ -203,10 +240,12 @@ export function ReportScreen({
         >
           통학 유지하기
         </Button>
-        <Button size="lg" onClick={onGo}>
+        <Button size="lg" onClick={onGo} data-tour="next">
           {m.nextLabel}
         </Button>
       </ActionBar>
+
+      <Spotlight open={tour.open} steps={TOUR} onClose={tour.close} />
     </div>
   );
 }
