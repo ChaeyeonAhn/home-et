@@ -8,7 +8,9 @@ export const authEnabled = Boolean(
 );
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [Google],
+  // 항상 Google 계정 선택 화면을 띄움 (안 그러면 브라우저에 로그인된 계정으로 바로 넘어가서
+  // 다른 계정으로 바꾸거나, 공용 기기에서 다음 사람이 자기 계정으로 로그인할 수 없음)
+  providers: [Google({ authorization: { params: { prompt: "select_account" } } })],
   session: { strategy: "jwt" },
   callbacks: {
     // 어댑터 없는 OAuth에선 user.id가 로그인마다 새 UUID라서(token.sub도 바뀜),
