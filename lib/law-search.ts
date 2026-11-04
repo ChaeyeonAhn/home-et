@@ -132,5 +132,6 @@ export interface AskSource {
 export interface AskResult {
   answer: string | null; // Gemini 키가 없거나 실패하면 null → 화면은 조문만 보여 줌
   sources: AskSource[];
-  source: "llm" | "search";
+  /** file-search = Gemini API File Search가 찾음, llm = BM25로 찾고 Gemini가 설명, search = 조문만 */
+  source: "file-search" | "llm" | "search";
 }

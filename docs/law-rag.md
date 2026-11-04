@@ -3,10 +3,16 @@
 계약 D-day 화면(④)에서 사용자가 계약서 문장이나 궁금한 점을 적으면, 관련 법 조문을 찾아 쉬운 말로 설명하고 근거 조문을 보여 줘요.
 
 ```
-질문 ─▶ ① 조문 검색 (lib/law-search.ts, data/law-chunks.json)
-        ─▶ ② Gemini가 찾은 조문만 근거로 설명 (app/api/ask/route.ts)
-        ─▶ ③ 화면: 설명 + 근거 조문 + 법제처 원문 링크 (components/screens/law-ask.tsx)
+법제처 Open API ─(npm run build:law)─▶ data/law-chunks.json ─(npm run build:file-search)─▶ Gemini File Search 저장소
+
+질문 ─▶ /api/ask (app/api/ask/route.ts)
+        ① Gemini API File Search: Gemini가 저장소에서 조문을 찾아 답하고, 근거는 grounding 정보로 받음  ← 기본
+        ② 대체: BM25(lib/law-search.ts)로 찾고 Gemini가 설명   (저장소가 없거나 ①이 실패할 때)
+        ③ 키가 없으면 BM25로 찾은 조문만
+     ─▶ 화면: 설명 + 근거 조문 + 법제처 원문 링크 (components/screens/law-ask.tsx)
 ```
+
+**쓰는 Google 도구**: Gemini API(답변 생성), **Gemini API File Search**(관리형 RAG: 자르기·임베딩·색인·검색·근거 표시)
 
 ## 1. 데이터: DB 없이 JSON
 
@@ -35,7 +41,30 @@ npm run build:law     # → data/law-chunks.json 갱신 후 커밋
 - 범위를 바꾸려면 `scripts/build-law.mts`의 `TARGETS`만 고치면 돼요.
 - 한자 병기(`임대차(賃貸借)`)와 개정 표시(`<개정 2015.1.6>`)는 빼고, 항·호는 줄바꿈으로 남겨요.
 
-## 2. 검색: 한글 2글자 BM25 (`lib/law-search.ts`)
+## 2. 검색 ①: Gemini API File Search (기본)
+
+[File Search](https://ai.google.dev/gemini-api/docs/file-search)는 Gemini API에 들어 있는 관리형 RAG예요. 파일을 올리면 자르기·임베딩·색인을 알아서 하고, `generateContent`에 `fileSearch` 도구를 주면 Gemini가 직접 찾아서 답해요. 벡터 DB를 따로 둘 필요가 없어요.
+
+**저장소 만들기** (조문 데이터가 바뀌었을 때만)
+
+```bash
+# .env.local
+GEMINI_API_KEY=<키>
+
+npm run build:file-search      # 끝에 출력되는 줄을 .env.local에 추가
+# GEMINI_FILE_SEARCH_STORE=fileSearchStores/...
+```
+
+- `scripts/build-file-search.mts`가 `data/law-chunks.json`의 조문을 **조문 1개 = 문서 1개**로 올려요. 문서 이름은 `주택임대차보호법 제10조(강행규정)` 형식이고, `customMetadata`에 조문 id(`주택임대차보호법:제10조`)를 넣어요.
+- 이미 `GEMINI_FILE_SEARCH_STORE`가 있으면 그 저장소를 지우고 새로 만들어요.
+- 저장소는 **API 키의 프로젝트에 속해요.** 다른 키(예: 배포용 키)를 쓰면 그 키로 스크립트를 다시 돌리고, 배포 환경 변수에도 `GEMINI_FILE_SEARCH_STORE`를 넣어야 해요.
+- 비용: 올릴 때 임베딩 비용만 들고(조문 123개라 아주 적음), 저장과 질문 임베딩은 무료예요.
+
+**답변의 근거**: 응답의 `groundingMetadata.groundingChunks[].retrievedContext`에서 `customMetadata.id`(없으면 문서 이름)로 우리 조문을 찾아요. 모르는 조각은 버리고, **근거가 하나도 없으면 답을 쓰지 않고** ②로 넘어가요(지어낸 답 방지).
+
+## 3. 검색 ②: 한글 2글자 BM25 (`lib/law-search.ts`, 대체용)
+
+File Search 저장소가 없거나 호출이 실패할 때, 그리고 키가 없을 때 써요.
 
 - 질문과 조문을 어절마다 2글자씩 잘라(`임차인이` → `임차`, `차인`, `인이`) BM25로 점수를 매겨요. 조사·띄어쓰기가 달라도 찾을 수 있고, 임베딩 API나 벡터 DB가 필요 없어요.
 - 조문 제목은 두 번 넣어 가중치를 줘요.
@@ -58,7 +87,7 @@ npm run build:law     # → data/law-chunks.json 갱신 후 커밋
 
 검색이 엉뚱한 조문을 찾으면 먼저 `QUERY_SYNONYMS`에 일상어를 추가해 보세요.
 
-## 3. 답변: `POST /api/ask`
+## 4. 답변: `POST /api/ask`
 
 요청: `{ "question": "…" }` (최대 500자, 비어 있거나 JSON이 아니면 400)
 
@@ -68,19 +97,21 @@ npm run build:law     # → data/law-chunks.json 갱신 후 커밋
 {
   "answer": "…" | null,
   "sources": [{ "id": "주택임대차보호법:제10조", "label": "주택임대차보호법 제10조(강행규정)", "text": "…", "url": "https://www.law.go.kr/법령/…", "cited": true }],
-  "source": "llm" | "search"
+  "source": "file-search" | "llm" | "search"
 }
 ```
 
-- Gemini(`GEMINI_MODEL`, 기본 `gemini-flash-lite-latest`)에 찾은 조문을 `[S1]…[S5]`로 붙여 넘기고, **그 조문만 근거로** 해요체 3~6문장으로 답하게 해요. 조문으로 답하기 어려우면 공인중개사·대한법률구조공단(132)을 안내해요.
-- **근거 검증**: 답에서 인용한 번호(`cited`) 중 실제로 넘긴 조문만 인정해요. 근거로 쓴 조문이 위로 오고, 나머지는 "참고"로 흐리게 보여요.
+- `source: "file-search"`: File Search로 찾은 답. `sources`는 grounding으로 확인된 조문만이에요(모두 `cited: true`).
+- `source: "llm"`: BM25로 찾은 조문을 `[S1]…[S5]`로 붙여 넘기고 그 조문만 근거로 답하게 해요. 답에서 인용한 번호(`cited`) 중 실제로 넘긴 조문만 인정하고, 나머지는 "참고"로 흐리게 보여요.
+- 두 경우 모두 모델은 `GEMINI_MODEL`(기본 `gemini-flash-lite-latest`), 해요체 3~6문장, 조문으로 답하기 어려우면 공인중개사·대한법률구조공단(132)을 안내해요.
+- 화면에는 어떤 방식으로 찾았는지 한 줄로 보여 줘요("Gemini API File Search가 법령 저장소에서 찾은 조문이에요").
 - `GEMINI_API_KEY`가 없거나 호출이 실패하면 `answer: null`, `source: "search"`로 **찾은 조문만** 돌려줘요. 화면은 "관련 조문만 보여 드려요"로 바뀌어요.
 
-## 4. 한계 / 다음 단계
+## 5. 한계 / 다음 단계
 
 - **법률 자문이 아님**: 일반적인 조문 설명이에요. 화면에 안내 문구를 넣었어요.
 - **검색 범위**: 위 6개 법령만 있어요. 판례·법령해석은 없어요. 범위 밖 질문은 엉뚱한 조문이 나올 수 있어요.
-- **임베딩 검색**: 지금은 키워드(BM25)만 써요. 질문이 조문과 단어가 많이 다르면 놓칠 수 있어서, 필요하면 Gemini 임베딩을 `data/law-chunks.json`에 미리 넣고 BM25와 섞는 방식으로 확장할 수 있어요.
+- **File Search 미검증**: 이 코드는 Gemini 키 없이 작성해서 저장소 업로드와 실제 답변은 아직 돌려 보지 못했어요. 키를 넣고 `npm run build:file-search` → 예시 질문으로 확인이 필요해요. 특히 `GEMINI_MODEL`이 File Search를 지원하는 모델인지 확인해야 해요.
 - **법령용어 API**: 법제처의 법령용어·일상용어 연계 API로 `QUERY_SYNONYMS`와 용어 카드(`lib/dday.ts`의 `TERMS`)를 공식 정의로 채울 수 있어요.
 - **등기부등본 분석 (2단계)**: 등본을 읽어 근저당·압류·신탁 같은 위험 신호를 뽑고, 설명은 이 조문 검색을 재사용해요. 부동산등기법, 전세사기피해자 특별법 추가가 필요해요.
 - 호출 횟수 제한이 없어요(`docs/roadmap.md` 4번과 같은 문제).

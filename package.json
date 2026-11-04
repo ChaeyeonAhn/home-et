@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "build:law": "node --env-file=.env.local scripts/build-law.mts"
+    "build:law": "node --env-file=.env.local scripts/build-law.mts",
+    "build:file-search": "node --env-file=.env.local scripts/build-file-search.mts"
   },
   "dependencies": {
     "@google/genai": "^2.32.0",

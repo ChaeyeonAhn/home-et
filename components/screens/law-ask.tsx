@@ -11,6 +11,12 @@ const EXAMPLES = [
   "계약 끝났는데 보증금을 못 돌려받으면 어떡해요?",
 ];
 
+const SOURCE_NOTE: Record<AskResult["source"], string> = {
+  "file-search": "Gemini API File Search가 법령 저장소에서 찾은 조문이에요.",
+  llm: "키워드 검색으로 찾은 조문을 Gemini가 설명했어요.",
+  search: "키워드 검색으로 찾은 조문이에요.",
+};
+
 /** 계약서·특약 질문 → 관련 법 조문 + 쉬운 설명 (/api/ask, docs/law-rag.md) */
 export function LawAsk() {
   const [question, setQuestion] = useState("");
@@ -83,6 +89,7 @@ export function LawAsk() {
           {result.sources.length > 0 && (
             <div className="space-y-2">
               <SectionLabel>{result.answer ? "근거 조문" : "관련 조문"}</SectionLabel>
+              <p className="text-xs text-fg-muted">{SOURCE_NOTE[result.source]}</p>
               {result.sources.map((s) => (
                 <SourceItem key={s.id} source={s} dim={!!result.answer && !s.cited} />
               ))}
