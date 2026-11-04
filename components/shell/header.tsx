@@ -13,10 +13,22 @@ export const STEPS: { no: StepNo; label: string }[] = [
   { no: 4, label: "계약 D-day" },
 ];
 
-/** minimalMobile: 모바일에서 로고(+로그인)만. 질문 화면처럼 자체 진행률이 있을 때 단계 표시가 겹치지 않게 */
+/**
+ * minimalMobile: 모바일에서 로고(+로그인)만. 질문 화면처럼 자체 진행률이 있을 때 단계 표시가 겹치지 않게
+ * hideSteps: 데스크톱 단계 알약 숨김 (시작 화면). 자리는 남겨서 오른쪽 버튼 위치가 그대로
+ */
 export function Header({
-  step, canVisit, onNavigate, minimalMobile, className,
-}: { step: StepNo; canVisit: (no: StepNo) => boolean; onNavigate: (no: StepNo) => void; minimalMobile?: boolean; className?: string }) {
+  step, canVisit, onNavigate, onHome, minimalMobile, hideSteps, className,
+}: {
+  step: StepNo;
+  canVisit: (no: StepNo) => boolean;
+  onNavigate: (no: StepNo) => void;
+  /** 로고: 시작 화면(랜딩)으로 */
+  onHome: () => void;
+  minimalMobile?: boolean;
+  hideSteps?: boolean;
+  className?: string;
+}) {
   const current = STEPS.find((s) => s.no === step)!;
   const ref = useRef<HTMLElement>(null);
 
@@ -36,12 +48,12 @@ export function Header({
   return (
     <header ref={ref} className={cx("sticky top-0 z-20 border-b border-glass-border shadow-[0_8px_30px_rgb(20_30_55/0.06)]", glassBar, className)}>
       <div className="mx-auto flex max-w-6xl items-center gap-4 px-4 py-3 sm:px-6">
-        <button type="button" onClick={() => onNavigate(1)} className={cx("shrink-0 rounded-md", focusRing)} aria-label="HOME:ET 처음으로">
+        <button type="button" onClick={onHome} className={cx("shrink-0 rounded-md", focusRing)} aria-label="HOME:ET 처음 화면으로">
           <Logo />
         </button>
 
         {/* 데스크톱: 단계 알약 */}
-        <nav className="hidden min-w-0 flex-1 justify-end gap-1 md:flex" aria-label="단계">
+        <nav className={cx("hidden min-w-0 flex-1 justify-end gap-1 md:flex", hideSteps && "invisible")} aria-label="단계" aria-hidden={hideSteps || undefined}>
           {STEPS.map(({ no, label }) => (
             <button
               key={no}

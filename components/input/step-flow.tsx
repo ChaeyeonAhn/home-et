@@ -16,11 +16,10 @@ const AUTO_NEXT_MS = 220; // 선택 피드백을 잠깐 보여 준 뒤 넘어감
 const START_PARAM = "start";
 
 /** 한 화면에 한 질문. 먼저 시작 화면(서비스 소개 + 기존 리포트 보기 / 검사 시작)을 보여 줌 */
-export function StepFlow({ state, update, onSubmit, loading }: InputFlowProps) {
+export function StepFlow({ state, update, onSubmit, loading, started, onStart: markStarted }: InputFlowProps) {
   // 이미 다 답하고 검사한 적이 있으면(새로고침·리포트에서 돌아옴) 저장된 답을 보여 주는 확인 화면부터
   const returning = state.analysis !== null && allValid(state);
   const reports = useReports();
-  const [started, setStarted] = useState(false); // 시작 화면을 지났는지
   const [askLogin, setAskLogin] = useState(false); // 로그인 안 하고 검사 시작을 누르면: 로그인할지 묻기
   const [idx, setIdx] = useState(returning ? N : 0); // N = 확인 화면
   const [dir, setDir] = useState<1 | -1>(1);
@@ -33,7 +32,7 @@ export function StepFlow({ state, update, onSubmit, loading }: InputFlowProps) {
 
   const begin = () => {
     setAskLogin(false);
-    setStarted(true);
+    markStarted();
     window.scrollTo({ top: 0 });
   };
   // 저장 기능이 켜져 있는데 로그인 전이면, 저장하려면 로그인이 필요하다고 먼저 알려 줌
@@ -46,9 +45,8 @@ export function StepFlow({ state, update, onSubmit, loading }: InputFlowProps) {
     if (!url.searchParams.has(START_PARAM)) return;
     url.searchParams.delete(START_PARAM);
     window.history.replaceState(null, "", url.pathname + url.search + url.hash);
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- 로그인 후 돌아온 직후 한 번만
-    setStarted(true);
-  }, [reports.signedIn]);
+    markStarted();
+  }, [reports.signedIn, markStarted]);
 
   const isReview = idx === N;
   const q = QUESTIONS[idx];

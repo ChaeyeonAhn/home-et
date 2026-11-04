@@ -21,6 +21,8 @@ export function HomeEtApp() {
   const [state, setState] = useState<AppState>(INITIAL);
   const [today, setToday] = useState<Date | null>(null);
   const [loading, setLoading] = useState(false);
+  const [started, setStarted] = useState(false); // 시작 화면(소개)을 지났는지
+  const markStarted = useCallback(() => setStarted(true), []);
   const auth = useAuth();
   const name = auth.status === "authenticated" ? auth.name : null;
 
@@ -93,7 +95,18 @@ export function HomeEtApp() {
   return (
     <ReportsProvider state={state} ready={today !== null} onLoad={loadReport}>
       {/* 상단 메뉴로는 지금·이전 단계로만. 다음 단계는 각 화면의 버튼(검사 시작 → 그래도 자취하기 → 계약 일정 등록)으로만 넘어감 */}
-      <Header step={state.step} canVisit={(no) => no <= state.step} onNavigate={go} minimalMobile={onInput} />
+      <Header
+        step={state.step}
+        canVisit={(no) => no <= state.step}
+        onNavigate={go}
+        onHome={() => {
+          // 로고: 입력은 그대로 두고 시작 화면(소개 + 기존 리포트 보기 / 검사 시작)으로
+          setStarted(false);
+          go(1);
+        }}
+        minimalMobile={onInput}
+        hideSteps={onInput && !started}
+      />
       <main
         className={cx(
           "mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 md:py-12",
@@ -109,6 +122,8 @@ export function HomeEtApp() {
             update={update}
             onSubmit={analyze}
             loading={loading}
+            started={started}
+            onStart={markStarted}
           />
         )}
         {state.step === 2 && ready && (

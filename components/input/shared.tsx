@@ -11,6 +11,9 @@ export interface InputFlowProps {
   update: (patch: Partial<AppState>) => void;
   onSubmit: () => void;
   loading: boolean;
+  /** 시작 화면(소개)을 지났는지. 헤더 단계 표시도 이걸로 숨김 → 상위(HomeEtApp)가 가짐 */
+  started: boolean;
+  onStart: () => void;
 }
 
 export const allValid = (s: AppState) => QUESTIONS.every((q) => q.valid(s));
