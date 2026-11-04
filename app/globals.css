@@ -17,6 +17,8 @@
   --color-accent-fill: #f0a06a; /* 막대·차트 채움 */
   --color-accent-strong: #e8894d; /* 진한 오렌지 면 (오늘 배지, 지도 핀) */
   --color-on-accent: #2a1405; /* accent-strong 위 글자 */
+  --color-danger: #c62828; /* 삭제 등 되돌릴 수 없는 동작 (흰 배경 대비 5.6:1) */
+  --color-danger-soft: rgb(198 40 40 / 0.08);
 
   /* 글자 */
   --color-fg: #16172b;

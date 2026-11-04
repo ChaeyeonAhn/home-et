@@ -10,6 +10,7 @@ import {
   LinkButton, Meter, NumberInput, Panel, ScaleLabels, SectionLabel, Slider, Spotlight, StatList, useTour,
   type SpotlightStep,
 } from "@/components/ui";
+import { SaveReportPanel } from "@/components/reports/report-ui";
 
 /** 리포트 화면 안내: 처음 열 때 한 번, 아래 「화면 안내 다시 보기」로 다시 */
 const TOUR: SpotlightStep[] = [
@@ -32,6 +33,11 @@ const TOUR: SpotlightStep[] = [
     target: "values",
     title: "내 가치관으로 조정",
     body: "AI가 대학생활 목표에서 읽어 낸 값이에요. 지금 슬라이더를 직접 움직여 보세요. 자취지수가 바로 다시 계산돼요.",
+  },
+  {
+    target: "save",
+    title: "리포트 저장",
+    body: "가치관이나 가정값을 바꿔 가며 비교해 보고, 마음에 드는 결과를 저장해 두면 나중에 다시 열어 볼 수 있어요.",
   },
   {
     target: "next",
@@ -197,6 +203,8 @@ export function ReportScreen({
           )}
         </Card>
       </div>
+
+      <SaveReportPanel />
 
       <div className="flex justify-center md:justify-start">
         <LinkButton onClick={tour.start} className="font-medium text-fg-sub">

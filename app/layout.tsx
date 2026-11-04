@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Noto_Sans_KR, Outfit } from "next/font/google";
 import { authEnabled } from "@/auth";
 import { Providers } from "@/components/providers";
+import { firebaseEnabled } from "@/lib/firebase-env";
 import "./globals.css";
 
 // 본문: Noto Sans KR (가변 굵기). 한글 글리프는 unicode-range 조각으로 필요한 것만 받음
@@ -26,7 +27,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ko" className={`h-full antialiased ${notoSansKr.variable} ${outfit.variable}`}>
       <body className="min-h-dvh flex flex-col">
-        <Providers authEnabled={authEnabled}>{children}</Providers>
+        <Providers authEnabled={authEnabled} savingEnabled={authEnabled && firebaseEnabled}>{children}</Providers>
       </body>
     </html>
   );
