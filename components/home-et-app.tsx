@@ -10,7 +10,7 @@ import type { WeightAnalysis } from "@/lib/weights";
 import { StepFlow } from "./input/step-flow";
 import { useAuth } from "./providers";
 import { MyReportsDialog } from "./reports/report-ui";
-import { ReportsProvider } from "./reports/reports-context";
+import { ReportsProvider, clearSavedRef } from "./reports/reports-context";
 import { DdayScreen } from "./screens/dday-screen";
 import { RentScreen } from "./screens/rent-screen";
 import { ReportScreen } from "./screens/report-screen";
@@ -30,13 +30,22 @@ export function HomeEtApp() {
   // 마운트 후 저장된 상태 복원 + 날짜 기본값 (서버 렌더와 어긋나지 않게 클라이언트에서만)
   useEffect(() => {
     const now = startOfDay(new Date());
+    const params = new URLSearchParams(window.location.search);
+    // 로그아웃하고 돌아옴: 이 기기에 남은 입력(본가 주소·목표 글 등)과 저장 리포트 연결을 비우고 시작 화면으로
+    // (공용 기기에서 다음 사람에게 이전 결과가 보이지 않게)
+    const loggedOut = params.has("logout");
+    if (loggedOut) {
+      clearSavedRef();
+      params.delete("logout");
+      const qs = params.toString();
+      window.history.replaceState(null, "", window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash);
+    }
     // 입력 방식 비교 때 A(/step)가 따로 쓰던 저장값도 이어받음
-    const saved = loadState(STORAGE_KEY) ?? loadState(`${STORAGE_KEY}:step`) ?? INITIAL;
+    const saved = loggedOut ? INITIAL : (loadState(STORAGE_KEY) ?? loadState(`${STORAGE_KEY}:step`) ?? INITIAL);
     const contract = saved.contract || toInput(addDays(now, 5));
     const balance = saved.balance || toInput(addDays(now, 41));
     // 시작 화면에서 로그인하고 돌아온 경우(?reports=1 목록 열기, ?start=1 검사 시작)엔
     // 마지막으로 보던 단계(리포트 등)를 복원하지 않고 시작 화면에서 이어 감
-    const params = new URLSearchParams(window.location.search);
     const fromLanding = params.has("reports") || params.has("start");
     // eslint-disable-next-line react-hooks/set-state-in-effect -- 브라우저 전용 값(localStorage, 오늘 날짜)으로 초기화
     setToday(now);

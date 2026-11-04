@@ -67,7 +67,8 @@ function Bridge({ saving, children }: { saving: boolean; children: ReactNode }) 
     image: data?.user?.image ?? null,
     signingIn,
     signIn: start,
-    signOut: () => void signOut(),
+    // 로그아웃하면 어느 화면에 있든 시작 화면으로 (?logout=1 → HomeEtApp이 이 기기의 입력도 비움)
+    signOut: () => void signOut({ redirectTo: "/?logout=1" }),
   };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -20,6 +20,8 @@ const readRef = (): SavedRef | null => {
     return null;
   }
 };
+/** 로그아웃 때 '저장 리포트를 고치는 중' 표시도 지움 */
+export const clearSavedRef = () => writeRef(null);
 const writeRef = (v: SavedRef | null) => {
   try {
     if (v) localStorage.setItem(REF_KEY, JSON.stringify(v));
