@@ -3,6 +3,7 @@
 /** 리포트 저장 UI: 리포트 화면의 저장 카드 + 시작 화면의 '기존 리포트 보기' + 목록 Dialog */
 import { useEffect, useState } from "react";
 import { Badge, Button, Card, CardTitle, Dialog, FinePrint } from "@/components/ui";
+import { cx, focusRing } from "@/components/ui/styles";
 import { MAX_REPORTS, type SavedReportMeta } from "@/lib/saved-reports";
 import { useReports } from "./reports-context";
 
@@ -139,8 +140,19 @@ export function MyReportsDialog() {
       ) : (
         <ul className="space-y-2">
           {r.list.map((item) => (
-            <li key={item.id} className="rounded-panel border border-glass-border bg-surface/70 p-3">
-              <div className="flex items-start justify-between gap-2">
+            <li
+              key={item.id}
+              className="group relative rounded-panel border border-glass-border bg-surface/70 p-3 transition hover:border-primary/25 hover:bg-surface hover:shadow-glass"
+            >
+              {/* 카드 전체가 '열기' 버튼 (삭제 버튼만 그 위에 따로) */}
+              <button
+                type="button"
+                disabled={r.busy}
+                onClick={() => (r.hasUnsaved ? setPendingOpen(item) : void r.open(item.id))}
+                aria-label={`${item.title} 열기`}
+                className={cx("absolute inset-0 rounded-panel disabled:cursor-wait", focusRing)}
+              />
+              <div className="pointer-events-none flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="truncate font-semibold text-fg">{item.title}</p>
                   <p className="mt-0.5 text-xs text-fg-muted">
@@ -152,26 +164,28 @@ export function MyReportsDialog() {
                   {item.summary.index.toFixed(1)}점
                 </Badge>
               </div>
-              {/* 삭제는 왼쪽(보조), 열기는 오른쪽(주 동작) */}
               <div className="mt-2.5 flex items-center justify-between gap-2">
-                <Button
-                  size="sm"
-                  variant={confirmDelete === item.id ? "outline" : "ghost"}
+                <button
+                  type="button"
                   disabled={r.busy}
                   onClick={() => {
                     if (confirmDelete === item.id) void r.remove(item.id).then(() => setConfirmDelete(null));
                     else setConfirmDelete(item.id);
                   }}
+                  className={cx(
+                    "relative z-10 inline-flex items-center gap-1.5 rounded-control border px-2.5 py-1.5 text-xs font-semibold transition disabled:opacity-50",
+                    confirmDelete === item.id
+                      ? "border-danger bg-danger text-white hover:bg-danger/90"
+                      : "border-danger/40 bg-surface/80 text-danger hover:bg-danger-soft",
+                    focusRing,
+                  )}
                 >
+                  <TrashIcon />
                   {confirmDelete === item.id ? "정말 지우기" : "삭제"}
-                </Button>
-                <Button
-                  size="sm"
-                  disabled={r.busy}
-                  onClick={() => (r.hasUnsaved ? setPendingOpen(item) : void r.open(item.id))}
-                >
-                  열기
-                </Button>
+                </button>
+                <span className="pointer-events-none text-xs font-semibold text-fg-muted transition group-hover:text-primary" aria-hidden>
+                  열기 ›
+                </span>
               </div>
             </li>
           ))}
@@ -183,5 +197,16 @@ export function MyReportsDialog() {
         </p>
       )}
     </Dialog>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M3 6h18" />
+      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+    </svg>
   );
 }
