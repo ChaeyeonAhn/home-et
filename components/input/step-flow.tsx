@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ActionBar, Button, useIsDesktop } from "@/components/ui";
+import { ActionBar, Button, LinkButton, useIsDesktop } from "@/components/ui";
 import { cx } from "@/components/ui/styles";
 import { HeroEditor, QUESTIONS } from "./questions";
 import { AnswerRow, IntroFeatures, ProgressBar, SideIntro, allValid, type InputFlowProps } from "./shared";
+import { Tutorial, tutorialUnseen } from "./tutorial";
 
 const N = QUESTIONS.length;
 const AUTO_NEXT_MS = 220; // 선택 피드백을 잠깐 보여 준 뒤 넘어감
@@ -20,8 +21,20 @@ export function StepFlow({ state, update, onSubmit, loading, onOpenReport }: Inp
   const [fromReview, setFromReview] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const desktop = useIsDesktop();
+  const [tutorial, setTutorial] = useState(false);
 
   useEffect(() => () => void (timer.current && clearTimeout(timer.current)), []);
+  // 처음 온 사람에게만 사용법 안내를 자동으로 (이어서 하는 사람은 건너뜀)
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 브라우저 전용 값(localStorage)으로 초기화
+    if (!returning && tutorialUnseen()) setTutorial(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 첫 화면에서 한 번만
+  }, []);
+  const howTo = (
+    <LinkButton onClick={() => setTutorial(true)} className="mt-4">
+      사용법 보기
+    </LinkButton>
+  );
 
   const isReview = idx === N;
   const q = QUESTIONS[idx];
@@ -66,7 +79,7 @@ export function StepFlow({ state, update, onSubmit, loading, onOpenReport }: Inp
       {/* 데스크톱: 왼쪽에 소개 + 지금까지 답한 것 */}
       <aside className="hidden md:block">
         <div className="sticky top-24">
-          <SideIntro />
+          <SideIntro>{howTo}</SideIntro>
           <ol className="mt-8 space-y-0.5" aria-label="질문 목록">
             {QUESTIONS.map((qq, i) => (
               <li key={qq.id}>
@@ -88,7 +101,8 @@ export function StepFlow({ state, update, onSubmit, loading, onOpenReport }: Inp
       {!started && (
         <div className="flex flex-1 flex-col px-5 pt-8 md:hidden">
           <SideIntro>
-            <div className="mt-8">
+            {howTo}
+            <div className="mt-6">
               <IntroFeatures />
             </div>
           </SideIntro>
@@ -183,6 +197,7 @@ export function StepFlow({ state, update, onSubmit, loading, onOpenReport }: Inp
           </Button>
         </ActionBar>
       </section>
+      <Tutorial open={tutorial} onClose={() => setTutorial(false)} />
     </div>
   );
 }
