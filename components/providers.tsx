@@ -80,7 +80,8 @@ function Bridge({ saving, children }: { saving: boolean; children: ReactNode }) 
         scope: `openid email profile ${CALENDAR_SCOPE}`,
         include_granted_scopes: "true",
         access_type: "offline", // 1시간 뒤에도 등록할 수 있게 refresh token 받기
-        prompt: "consent",
+        // 계정 선택 화면은 기본 로그인과 똑같이 유지(공용 기기 대비) + 매번 동의 화면을 띄워 refresh token 받기
+        prompt: "select_account consent",
       }),
     // 로그아웃하면 어느 화면에 있든 시작 화면으로 (?logout=1 → HomeEtApp이 이 기기의 입력도 비움)
     signOut: () => void signOut({ redirectTo: "/?logout=1" }),
