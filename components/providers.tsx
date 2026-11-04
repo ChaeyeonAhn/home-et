@@ -6,6 +6,8 @@ import { createContext, useContext, type ReactNode } from "react";
 
 export interface AuthState {
   enabled: boolean;
+  /** 로그인 + Firebase가 모두 설정돼 리포트 저장을 쓸 수 있는지 */
+  saving: boolean;
   status: "loading" | "authenticated" | "unauthenticated";
   name: string | null;
   image: string | null;
@@ -15,6 +17,7 @@ export interface AuthState {
 
 const disabled: AuthState = {
   enabled: false,
+  saving: false,
   status: "unauthenticated",
   name: null,
   image: null,
@@ -25,10 +28,11 @@ const disabled: AuthState = {
 const AuthContext = createContext<AuthState>(disabled);
 export const useAuth = () => useContext(AuthContext);
 
-function Bridge({ children }: { children: ReactNode }) {
+function Bridge({ saving, children }: { saving: boolean; children: ReactNode }) {
   const { data, status } = useSession();
   const value: AuthState = {
     enabled: true,
+    saving,
     status,
     name: data?.user?.name ?? null,
     image: data?.user?.image ?? null,
@@ -50,11 +54,13 @@ function MapsProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function Providers({ authEnabled, children }: { authEnabled: boolean; children: ReactNode }) {
+export function Providers({
+  authEnabled, savingEnabled, children,
+}: { authEnabled: boolean; savingEnabled: boolean; children: ReactNode }) {
   if (!authEnabled) return <AuthContext.Provider value={disabled}><MapsProvider>{children}</MapsProvider></AuthContext.Provider>;
   return (
     <SessionProvider>
-      <Bridge>
+      <Bridge saving={savingEnabled}>
         <MapsProvider>{children}</MapsProvider>
       </Bridge>
     </SessionProvider>

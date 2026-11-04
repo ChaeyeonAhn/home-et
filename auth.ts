@@ -10,4 +10,23 @@ export const authEnabled = Boolean(
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [Google],
   session: { strategy: "jwt" },
+  callbacks: {
+    // 어댑터 없는 OAuth에선 user.id가 로그인마다 새 UUID라서(token.sub도 바뀜),
+    // 리포트 저장 키로는 Google 계정 고유 ID(sub)를 따로 담아 둔다.
+    jwt({ token, account }) {
+      if (account?.provider === "google" && account.providerAccountId) token.uid = `google:${account.providerAccountId}`;
+      return token;
+    },
+    session({ session, token }) {
+      if (typeof token.uid === "string") session.user.id = token.uid;
+      return session;
+    },
+  },
 });
+
+/** 서버에서 로그인한 사용자의 저장 키. 로그인 안 했거나 예전 세션(uid 없음)이면 null */
+export async function currentUid(): Promise<string | null> {
+  const session = await auth();
+  const id = session?.user?.id;
+  return typeof id === "string" && id.startsWith("google:") ? id : null;
+}

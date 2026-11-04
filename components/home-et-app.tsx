@@ -9,6 +9,8 @@ import { addDays, startOfDay, toInput } from "@/lib/dday";
 import type { WeightAnalysis } from "@/lib/weights";
 import { StepFlow } from "./input/step-flow";
 import { useAuth } from "./providers";
+import { MyReportsDialog } from "./reports/report-ui";
+import { ReportsProvider } from "./reports/reports-context";
 import { DdayScreen } from "./screens/dday-screen";
 import { RentScreen } from "./screens/rent-screen";
 import { ReportScreen } from "./screens/report-screen";
@@ -78,12 +80,18 @@ export function HomeEtApp() {
     }
   };
 
+  // 저장된 리포트 열기: 그 입력으로 통째로 바꾸고 리포트 화면으로
+  const loadReport = useCallback((s: AppState) => {
+    setState(s);
+    window.scrollTo({ top: 0 });
+  }, []);
+
   const ready = state.analysis !== null;
   // 모바일 입력 화면: 로고 헤더만 두고 푸터 없이 꽉 찬 화면 (한 화면 한 질문)
   const onInput = state.step === 1;
 
   return (
-    <>
+    <ReportsProvider state={state} ready={today !== null} onLoad={loadReport}>
       {/* 상단 메뉴로는 지금·이전 단계로만. 다음 단계는 각 화면의 버튼(검사 시작 → 그래도 자취하기 → 계약 일정 등록)으로만 넘어감 */}
       <Header step={state.step} canVisit={(no) => no <= state.step} onNavigate={go} minimalMobile={onInput} />
       <main
@@ -121,6 +129,7 @@ export function HomeEtApp() {
         {state.step === 4 && ready && today && <DdayScreen state={state} update={update} today={today} onBack={() => go(3)} />}
       </main>
       <Footer className={onInput ? "max-md:hidden" : undefined} />
-    </>
+      <MyReportsDialog />
+    </ReportsProvider>
   );
 }

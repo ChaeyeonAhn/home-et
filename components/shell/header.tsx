@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import type { StepNo } from "@/lib/app-state";
 import { useAuth } from "@/components/providers";
 import { cx, focusRing, glassBar } from "@/components/ui/styles";
+import { MyReportsButton } from "@/components/reports/report-ui";
 
 export const STEPS: { no: StepNo; label: string }[] = [
   { no: 1, label: "정보 입력" },
@@ -63,6 +64,7 @@ export function Header({
         <p className={cx("min-w-0 flex-1 truncate text-right text-[13px] font-semibold text-fg-sub md:hidden", minimalMobile && "invisible")} aria-live="polite">
           <span className="tabular-nums text-primary">{step}/4</span> {current.label}
         </p>
+        <MyReportsButton />
         <AuthButton />
       </div>
 
@@ -97,7 +99,10 @@ export function Logo() {
 export function Footer({ className }: { className?: string }) {
   return (
     <footer className={cx("mx-auto w-full max-w-6xl px-4 pb-8 text-xs text-fg-muted sm:px-6", className)}>
-      HOME:ET · 팀 로컬에선 됐는데 · 시세는 예시 데이터이며 산출식은 팀 확정 전 초안이에요.
+      HOME:ET · 팀 로컬에선 됐는데 · 시세는 예시 데이터이며 산출식은 팀 확정 전 초안이에요. ·{" "}
+      <a href="/privacy" className="underline-offset-2 hover:underline">
+        개인정보처리방침
+      </a>
     </footer>
   );
 }
