@@ -49,7 +49,9 @@ export const QUESTIONS: Question[] = [
     title: "평소 이렇게\n통학하나요?",
     sub: "Google 지도로 평일 오전 8시 출발 경로를 찾았어요. 고르면 다음 질문에 미리 채워 둘게요.",
     display: (s) => (s.routeKey ? s.routeSummary || "직접 입력" : "입력 전"),
-    valid: always, // 경로를 못 찾아도 다음 질문에서 직접 입력할 수 있음
+    // 경로 후보 중 하나나 '직접 입력할게요'를 골라야 통과 (못 찾아도 '직접 입력' 선택지는 항상 있음).
+    // 본가·학교를 바꾸면 routeKey가 초기화돼서 다시 골라야 검사 시작이 눌림
+    valid: (s) => s.routeKey !== null,
   },
   {
     id: "oneway", group: "통학 경로", label: "편도 시간", kind: "input",
