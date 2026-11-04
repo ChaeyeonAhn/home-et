@@ -152,14 +152,8 @@ export function MyReportsDialog() {
                   {item.summary.index.toFixed(1)}점
                 </Badge>
               </div>
-              <div className="mt-2.5 flex gap-2">
-                <Button
-                  size="sm"
-                  disabled={r.busy}
-                  onClick={() => (r.hasUnsaved ? setPendingOpen(item) : void r.open(item.id))}
-                >
-                  열기
-                </Button>
+              {/* 삭제는 왼쪽(보조), 열기는 오른쪽(주 동작) */}
+              <div className="mt-2.5 flex items-center justify-between gap-2">
                 <Button
                   size="sm"
                   variant={confirmDelete === item.id ? "outline" : "ghost"}
@@ -170,6 +164,13 @@ export function MyReportsDialog() {
                   }}
                 >
                   {confirmDelete === item.id ? "정말 지우기" : "삭제"}
+                </Button>
+                <Button
+                  size="sm"
+                  disabled={r.busy}
+                  onClick={() => (r.hasUnsaved ? setPendingOpen(item) : void r.open(item.id))}
+                >
+                  열기
                 </Button>
               </div>
             </li>
