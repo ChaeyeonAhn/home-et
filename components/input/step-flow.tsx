@@ -126,7 +126,8 @@ export function StepFlow({ state, update, onSubmit, loading, started, onStart: m
           {/* 저장 기능이 켜져 있으면 '기존 리포트 보기'(위) + '검사 시작'(아래)을 전체 너비로 쌓음 */}
           <ActionBar desktopClassName="md:mt-6 md:flex-col md:border-0 md:bg-transparent md:p-0" stacked={reports.enabled}>
             <OpenReportsButton />
-            <Button size="lg" block onClick={onStart}>
+            {/* 로그인 상태 확인 중엔 잠깐 잠금 (로그인했는데 '로그인할까요' 모달이 뜨지 않게) */}
+            <Button size="lg" block onClick={onStart} disabled={reports.authLoading}>
               자취 적합 검사 시작
             </Button>
           </ActionBar>

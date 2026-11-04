@@ -60,6 +60,8 @@ interface ReportsCtx {
   signedIn: boolean;
   /** 로그인 이동 중 (버튼 잠금용) */
   signingIn: boolean;
+  /** 로그인 상태 확인 중 (버튼 잠금용) */
+  authLoading: boolean;
   /** callbackUrl: 로그인 후 돌아올 주소 (기본: 지금 페이지) */
   signIn: (callbackUrl?: string) => void;
   /** 기존 리포트 보기: 로그인했으면 목록 열기, 아니면 로그인 후 돌아와서 목록 열기 */
@@ -105,6 +107,8 @@ export function ReportsProvider({
   const auth = useAuth();
   const enabled = auth.saving;
   const signedIn = enabled && auth.status === "authenticated";
+  // 페이지를 연 직후 세션 확인 중: 이때 누르면 로그인 안 된 걸로 오인해 로그인 화면으로 보냄 → 버튼 잠금
+  const authLoading = enabled && auth.status === "loading";
   const [list, setList] = useState<SavedReportMeta[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -219,9 +223,10 @@ export function ReportsProvider({
 
   const { signIn } = auth;
   const openReports = useCallback(() => {
+    if (authLoading) return;
     if (signedIn) openDialog();
     else signIn(`${window.location.pathname}?${OPEN_PARAM}=1`);
-  }, [signedIn, openDialog, signIn]);
+  }, [authLoading, signedIn, openDialog, signIn]);
 
   // '기존 리포트 보기'로 로그인하고 돌아왔으면 목록을 바로 열고, 주소의 표시는 지움
   useEffect(() => {
@@ -238,6 +243,7 @@ export function ReportsProvider({
     enabled,
     signedIn,
     signingIn: auth.signingIn,
+    authLoading,
     signIn: auth.signIn,
     openReports,
     list,

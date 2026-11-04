@@ -74,7 +74,7 @@ export function OpenReportsButton({ className }: { className?: string }) {
   const r = useReports();
   if (!r.enabled) return null;
   return (
-    <Button variant="secondary" size="lg" block className={className} onClick={r.openReports} disabled={r.signingIn} aria-busy={r.signingIn}>
+    <Button variant="secondary" size="lg" block className={className} onClick={r.openReports} disabled={r.signingIn || r.authLoading} aria-busy={r.signingIn || r.authLoading}>
       {r.signingIn ? "로그인 화면으로 이동 중…" : "기존 리포트 보기"}
     </Button>
   );
