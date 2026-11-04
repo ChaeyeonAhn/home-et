@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { AppState } from "@/lib/app-state";
 import { buildIcs } from "@/lib/dday";
 import { ddayModel, type DdayItem } from "@/lib/view-models";
+import { LawAsk } from "./law-ask";
 import {
   ActionBar, Button, Callout, Card, CardTitle, Eyebrow, Field, FinePrint, NumberInput,
   PageHeader, SectionLabel, TermCard, TextInput, TextLink, TimelineItem, type BadgeTone,
@@ -105,6 +106,11 @@ export function DdayScreen({
           </Card>
         </div>
       )}
+
+      {/* 계약서·특약 질문 → 법 조문 검색(RAG) */}
+      <div className="mt-5">
+        <LawAsk />
+      </div>
 
       {/* 모바일: 하단 고정 (좁은 '이전' + 캘린더 등록), 데스크톱: 오른쪽 정렬 버튼 줄 */}
       <div className="mt-5">
