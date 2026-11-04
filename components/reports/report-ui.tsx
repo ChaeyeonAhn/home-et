@@ -1,9 +1,8 @@
 "use client";
 
-/** 리포트 저장 UI: 리포트 화면의 저장 카드 + 헤더의 '내 리포트' 버튼과 목록 Dialog */
+/** 리포트 저장 UI: 리포트 화면의 저장 카드 + 시작 화면의 '기존 리포트 보기' + 목록 Dialog */
 import { useEffect, useState } from "react";
 import { Badge, Button, Card, CardTitle, Dialog, FinePrint } from "@/components/ui";
-import { cx, focusRing } from "@/components/ui/styles";
 import { MAX_REPORTS, type SavedReportMeta } from "@/lib/saved-reports";
 import { useReports } from "./reports-context";
 
@@ -77,24 +76,6 @@ export function OpenReportsButton({ className }: { className?: string }) {
     <Button variant="secondary" size="lg" block className={className} onClick={r.openReports} disabled={r.signingIn} aria-busy={r.signingIn}>
       {r.signingIn ? "로그인 화면으로 이동 중…" : "기존 리포트 보기"}
     </Button>
-  );
-}
-
-// ── 헤더: '내 리포트' 버튼 (로그인했을 때만) ─────────────────────────────
-
-export function MyReportsButton() {
-  const r = useReports();
-  if (!r.signedIn) return null;
-  return (
-    <button
-      type="button"
-      onClick={() => r.openDialog()}
-      className={cx("shrink-0 rounded-full px-2.5 py-2 text-[13px] font-semibold text-fg hover:bg-surface-muted md:px-3", focusRing)}
-    >
-      내 리포트
-      {/* 모바일 헤더는 단계 이름이 잘리지 않게 개수 생략 */}
-      {r.list && <span className="max-md:hidden"> {r.list.length}/{MAX_REPORTS}</span>}
-    </button>
   );
 }
 

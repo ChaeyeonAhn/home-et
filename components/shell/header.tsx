@@ -4,7 +4,6 @@ import { useEffect, useRef } from "react";
 import type { StepNo } from "@/lib/app-state";
 import { useAuth } from "@/components/providers";
 import { cx, focusRing, glassBar } from "@/components/ui/styles";
-import { MyReportsButton } from "@/components/reports/report-ui";
 
 export const STEPS: { no: StepNo; label: string }[] = [
   { no: 1, label: "정보 입력" },
@@ -76,7 +75,6 @@ export function Header({
         <p className={cx("min-w-0 flex-1 truncate text-right text-[13px] font-semibold text-fg-sub md:hidden", minimalMobile && "invisible")} aria-live="polite">
           <span className="tabular-nums text-primary">{step}/4</span> {current.label}
         </p>
-        <MyReportsButton />
         <AuthButton />
       </div>
 
