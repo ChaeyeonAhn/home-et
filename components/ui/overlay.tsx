@@ -55,18 +55,34 @@ export function useKeyboardInset() {
  * 데스크톱(md+): 일반 흐름 속 오른쪽 정렬 버튼 줄. desktopClassName으로 바꿀 수 있음
  */
 export function ActionBar({
-  children, desktopClassName = "md:justify-end md:border-0 md:bg-transparent md:p-0", keyboardAware,
-}: { children: ReactNode; desktopClassName?: string; keyboardAware?: boolean }) {
+  children, desktopClassName = "md:justify-end md:border-0 md:bg-transparent md:p-0", keyboardAware, stacked,
+}: {
+  children: ReactNode;
+  desktopClassName?: string;
+  keyboardAware?: boolean;
+  /** 모바일에서 버튼을 위아래로 쌓기 (버튼 2개, 각각 전체 너비) */
+  stacked?: boolean;
+}) {
   const inset = useKeyboardInset();
   const lifted = keyboardAware && inset > 0;
   return (
     <>
       {/* 고정 바가 가리는 만큼만 자리 확보 (= pt-3 + lg 버튼 54px + pb). 크면 빈 화면에도 스크롤이 생김 */}
-      <div className="h-[calc(4.25rem_+_max(0.75rem,env(safe-area-inset-bottom)))] shrink-0 md:hidden" aria-hidden />
+      <div
+        className={cx(
+          "shrink-0 md:hidden",
+          // 쌓으면 버튼 하나(54px) + 간격(0.5rem)만큼 더
+          stacked
+            ? "h-[calc(8.125rem_+_max(0.75rem,env(safe-area-inset-bottom)))]"
+            : "h-[calc(4.25rem_+_max(0.75rem,env(safe-area-inset-bottom)))]",
+        )}
+        aria-hidden
+      />
       <div
         style={lifted ? { bottom: inset } : undefined}
         className={cx(
-          "fixed inset-x-0 bottom-0 z-30 flex gap-2 border-t border-glass-border max-md:[&>*]:flex-1",
+          "fixed inset-x-0 bottom-0 z-30 flex gap-2 border-t border-glass-border",
+          stacked ? "max-md:flex-col" : "max-md:[&>*]:flex-1",
           glassBar,
           lifted ? "p-0 [&_button]:rounded-none" : "px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]",
           "md:static md:z-auto md:backdrop-filter-none",

@@ -109,8 +109,6 @@ export function HomeEtApp() {
             update={update}
             onSubmit={analyze}
             loading={loading}
-            // '지난 결과' 바로가기는 1단계를 건너뛰게 되므로 끔 (1단계를 마쳐야 2단계로)
-            onOpenReport={undefined}
           />
         )}
         {state.step === 2 && ready && (

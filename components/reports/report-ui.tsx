@@ -23,7 +23,9 @@ export function SaveReportPanel() {
       {!r.signedIn ? (
         <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-fg-sub">로그인하면 리포트를 {MAX_REPORTS}개까지 저장하고 나중에 다시 열어 볼 수 있어요.</p>
-          <Button onClick={r.signIn}>Google로 로그인하고 저장</Button>
+          <Button onClick={r.signIn} disabled={r.signingIn} aria-busy={r.signingIn}>
+            {r.signingIn ? "로그인 화면으로 이동 중…" : "Google로 로그인하고 저장"}
+          </Button>
         </div>
       ) : (
         <div className="mt-3 space-y-3">
@@ -53,9 +55,6 @@ export function SaveReportPanel() {
                 {r.busy ? "저장 중…" : "리포트 저장"}
               </Button>
             )}
-            <Button variant="ghost" onClick={() => r.openDialog()}>
-              내 리포트 보기
-            </Button>
           </div>
           {r.error && (
             <p role="alert" className="text-sm font-semibold text-accent">
@@ -66,6 +65,18 @@ export function SaveReportPanel() {
       )}
       <FinePrint className="mt-3">본가 주소와 대학생활 목표 글이 함께 저장돼요. 언제든 지울 수 있어요.</FinePrint>
     </Card>
+  );
+}
+
+// ── 랜딩: '기존 리포트 보기' (저장 기능이 켜져 있을 때만) ─────────────────────────────
+
+export function OpenReportsButton({ className }: { className?: string }) {
+  const r = useReports();
+  if (!r.enabled) return null;
+  return (
+    <Button variant="secondary" size="lg" block className={className} onClick={r.openReports} disabled={r.signingIn} aria-busy={r.signingIn}>
+      {r.signingIn ? "로그인 화면으로 이동 중…" : "기존 리포트 보기"}
+    </Button>
   );
 }
 

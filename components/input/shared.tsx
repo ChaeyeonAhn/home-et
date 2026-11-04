@@ -11,8 +11,6 @@ export interface InputFlowProps {
   update: (patch: Partial<AppState>) => void;
   onSubmit: () => void;
   loading: boolean;
-  /** 이미 검사한 결과가 있으면: 리포트로 바로 가기 */
-  onOpenReport?: () => void;
 }
 
 export const allValid = (s: AppState) => QUESTIONS.every((q) => q.valid(s));

@@ -4,15 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import { ActionBar, Button, useIsDesktop } from "@/components/ui";
 import { cx } from "@/components/ui/styles";
 import { HeroEditor, QUESTIONS } from "./questions";
+import { OpenReportsButton } from "@/components/reports/report-ui";
+import { useReports } from "@/components/reports/reports-context";
 import { AnswerRow, IntroFeatures, ProgressBar, SideIntro, allValid, type InputFlowProps } from "./shared";
 
 const N = QUESTIONS.length;
 const AUTO_NEXT_MS = 220; // 선택 피드백을 잠깐 보여 준 뒤 넘어감
 
 /** 한 화면에 한 질문. 모바일은 먼저 시작 화면(서비스 소개)을 보여 줌 */
-export function StepFlow({ state, update, onSubmit, loading, onOpenReport }: InputFlowProps) {
+export function StepFlow({ state, update, onSubmit, loading }: InputFlowProps) {
   // 이미 다 답하고 검사한 적이 있으면(새로고침·리포트에서 돌아옴) 저장된 답을 보여 주는 확인 화면부터
   const returning = state.analysis !== null && allValid(state);
+  const reports = useReports();
   const [started, setStarted] = useState(false); // 모바일 시작 화면을 지났는지 (데스크톱은 무시)
   const [idx, setIdx] = useState(returning ? N : 0); // N = 확인 화면
   const [dir, setDir] = useState<1 | -1>(1);
@@ -93,14 +96,12 @@ export function StepFlow({ state, update, onSubmit, loading, onOpenReport }: Inp
             </div>
           </SideIntro>
           <p className="mt-6 text-center text-sm text-fg-muted">질문 {N}개에 답하면 바로 결과가 나와요</p>
-          <ActionBar desktopClassName="md:hidden">
-            {onOpenReport && (
-              <Button variant="secondary" size="lg" onClick={onOpenReport} className="max-md:w-28 max-md:flex-none!">
-                지난 결과
-              </Button>
-            )}
+          {/* 저장 기능이 켜져 있으면 '기존 리포트 보기'(위) + '검사 시작'(아래)을 전체 너비로 쌓음 */}
+          <ActionBar desktopClassName="md:hidden" stacked={reports.enabled}>
+            <OpenReportsButton />
             <Button
               size="lg"
+              block
               onClick={() => {
                 setStarted(true);
                 window.scrollTo({ top: 0 });

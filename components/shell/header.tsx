@@ -128,9 +128,11 @@ function AuthButton() {
   return (
     <button
       type="button"
-      onClick={auth.signIn}
+      onClick={() => auth.signIn()}
+      disabled={auth.signingIn}
+      aria-busy={auth.signingIn}
       className={cx(
-        "flex shrink-0 items-center gap-2 rounded-full border border-primary/14 bg-surface/65 px-3.5 py-2 text-[13px] font-semibold hover:bg-surface",
+        "flex shrink-0 items-center gap-2 rounded-full border border-primary/14 bg-surface/65 px-3.5 py-2 text-[13px] font-semibold hover:bg-surface disabled:opacity-60",
         focusRing,
       )}
     >

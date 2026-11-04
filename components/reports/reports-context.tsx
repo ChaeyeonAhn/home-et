@@ -36,6 +36,8 @@ const MESSAGES: Partial<Record<ReportsError, string>> = {
   invalid: "저장할 수 없는 리포트예요. 검사를 다시 해 주세요.",
   too_large: "리포트가 너무 커서 저장하지 못했어요.",
 };
+/** 로그인 후 돌아와서 목록을 열라는 표시 (?reports=1) */
+const OPEN_PARAM = "reports";
 const FULL_NOTICE = `리포트는 ${MAX_REPORTS}개까지 저장돼요. 하나를 지우면 새로 저장할 수 있어요.`;
 
 class ApiError extends Error {
@@ -56,7 +58,11 @@ interface ReportsCtx {
   /** 저장 기능이 켜져 있는지 (로그인 + Firebase 설정) */
   enabled: boolean;
   signedIn: boolean;
+  /** 로그인 이동 중 (버튼 잠금용) */
+  signingIn: boolean;
   signIn: () => void;
+  /** 기존 리포트 보기: 로그인했으면 목록 열기, 아니면 로그인 후 돌아와서 목록 열기 */
+  openReports: () => void;
   /** null = 아직 못 불러옴 */
   list: SavedReportMeta[] | null;
   busy: boolean;
@@ -210,10 +216,29 @@ export function ReportsProvider({
   const openDialog = useCallback((notice?: string) => setDialog({ open: true, notice: notice ?? null }), []);
   const closeDialog = useCallback(() => setDialog({ open: false, notice: null }), []);
 
+  const { signIn } = auth;
+  const openReports = useCallback(() => {
+    if (signedIn) openDialog();
+    else signIn(`${window.location.pathname}?${OPEN_PARAM}=1`);
+  }, [signedIn, openDialog, signIn]);
+
+  // '기존 리포트 보기'로 로그인하고 돌아왔으면 목록을 바로 열고, 주소의 표시는 지움
+  useEffect(() => {
+    if (!signedIn) return;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has(OPEN_PARAM)) return;
+    url.searchParams.delete(OPEN_PARAM);
+    window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 로그인 후 돌아온 직후 한 번만
+    openDialog();
+  }, [signedIn, openDialog]);
+
   const value: ReportsCtx = {
     enabled,
     signedIn,
-    signIn: auth.signIn,
+    signingIn: auth.signingIn,
+    signIn: () => auth.signIn(),
+    openReports,
     list,
     busy,
     error,
