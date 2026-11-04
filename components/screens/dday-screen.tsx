@@ -5,6 +5,7 @@ import type { AppState } from "@/lib/app-state";
 import { buildIcs } from "@/lib/dday";
 import { ddayModel, type DdayItem } from "@/lib/view-models";
 import { LawAsk } from "./law-ask";
+import { RegistryCheck } from "./registry-check";
 import {
   ActionBar, Button, Callout, Card, CardTitle, Eyebrow, Field, FinePrint, NumberInput,
   PageHeader, SectionLabel, TermCard, TextInput, TextLink, TimelineItem, type BadgeTone,
@@ -107,8 +108,9 @@ export function DdayScreen({
         </div>
       )}
 
-      {/* 계약서·특약 질문 → 법 조문 검색(RAG) */}
-      <div className="mt-5">
+      {/* 등기부등본 위험 신호 + 계약서·특약 질문(법령 RAG) */}
+      <div className="mt-5 space-y-5">
+        <RegistryCheck deposit={state.leaseDeposit} />
         <LawAsk />
       </div>
 
