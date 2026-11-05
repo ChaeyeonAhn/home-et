@@ -84,7 +84,15 @@ function useGoogleCalendar(steps: Step[], enabled: boolean) {
     if (auth.status !== "loading") resume();
   }, [auth.status]);
 
-  return { available: auth.enabled, sync, setSync, save, connect };
+  return {
+    available: auth.enabled,
+    /** 로그인 안 한 상태: 캘린더 버튼 대신 로그인 유도 카드 + .ics */
+    needsLogin: auth.enabled && auth.status === "unauthenticated",
+    loading: auth.status === "loading",
+    signingIn: auth.signingIn,
+    signIn: () => auth.signIn(),
+    sync, setSync, save, connect,
+  };
 }
 
 /** 2026-03-05 → Google 캘린더 그날 화면 */
@@ -104,9 +112,11 @@ export function DdayScreen({
   const sel = m.selected;
   const gcal = useGoogleCalendar(m.steps, m.valid);
   const closeSync = () => gcal.setSync({ kind: "idle" });
+  // 로그인한(또는 확인 중인) 상태에서만 Google 캘린더 등록이 기본 버튼. 아니면 .ics가 기본
+  const gcalPrimary = gcal.available && !gcal.needsLogin;
   const extras = (
     <>
-      {gcal.available && (
+      {gcalPrimary && (
         <div className="flex justify-end max-md:justify-center md:mt-3">
           <LinkButton disabled={!m.valid} onClick={() => downloadIcs(buildIcs(m.steps))} className="font-medium text-fg-sub">
             Apple·다른 캘린더는 .ics 파일 받기
@@ -142,7 +152,7 @@ export function DdayScreen({
           </Field>
         </div>
         <FinePrint className="mt-3">
-          {m.amountText} · {gcal.available ? "버튼 하나로 단계별 일정을 내 Google 캘린더에 넣어 드려요." : ".ics 파일은 Google·Apple 캘린더 모두에 가져올 수 있어요."}
+          {m.amountText} · {gcalPrimary ? "버튼 하나로 단계별 일정을 내 Google 캘린더에 넣어 드려요." : ".ics 파일은 Google·Apple 캘린더 모두에 가져올 수 있어요."}
         </FinePrint>
         {!m.valid && (
           <Callout tone="warning" className="mt-2">
@@ -195,6 +205,19 @@ export function DdayScreen({
         </div>
       )}
 
+      {/* 로그인 안 했으면: 로그인하면 캘린더에 바로 넣을 수 있다고 안내 (로그인하고 돌아오면 등록 버튼으로 바뀜) */}
+      {gcal.needsLogin && (
+        <Card className="mt-5">
+          <CardTitle>Google 캘린더에 넣기</CardTitle>
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-fg-sub">로그인하면 단계별 일정을 내 Google 캘린더에 바로 넣을 수 있어요.</p>
+            <Button onClick={gcal.signIn} disabled={gcal.signingIn} aria-busy={gcal.signingIn} className="shrink-0">
+              {gcal.signingIn ? "로그인 화면으로 이동 중…" : "Google로 로그인"}
+            </Button>
+          </div>
+        </Card>
+      )}
+
       {/* 모바일: 하단 고정 (좁은 '이전' + 캘린더 등록), 데스크톱: 오른쪽 정렬 버튼 줄 */}
       <div className="mt-5">
         {/* 모바일: 고정 바가 차지하는 빈칸 위에, 데스크톱: 버튼 줄 아래 */}
@@ -204,8 +227,8 @@ export function DdayScreen({
             <span className="md:hidden">이전</span>
             <span className="hidden md:inline">월세 추천으로 돌아가기</span>
           </Button>
-          {gcal.available ? (
-            <Button size="lg" disabled={!m.valid || gcal.sync.kind === "saving"} onClick={gcal.save}>
+          {gcalPrimary ? (
+            <Button size="lg" disabled={!m.valid || gcal.loading || gcal.sync.kind === "saving"} onClick={gcal.save}>
               {gcal.sync.kind === "saving" ? "캘린더에 넣는 중…" : "Google 캘린더에 등록"}
             </Button>
           ) : (
