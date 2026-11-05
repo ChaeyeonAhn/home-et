@@ -264,8 +264,8 @@ export function DdayScreen({
             </>
           )}
 
-          {/* 등기부등본 위험 신호 + 계약서·특약 질문(법령 RAG): 작은 버튼을 누르면 펼쳐짐 */}
-          <ContractTools deposit={state.leaseDeposit} />
+          {/* 등기부등본 위험 신호 + 계약서·특약 질문(법령 RAG): 누르면 오른쪽 아래 도우미 창이 그 기능으로 열림 */}
+          <ContractTools />
 
           {/* 로그인 안 했으면: 로그인하면 캘린더에 바로 넣을 수 있다고 안내 (로그인하고 돌아오면 등록 버튼으로 바뀜) */}
           {gcal.needsLogin && (

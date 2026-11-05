@@ -16,6 +16,7 @@ import { DdayScreen } from "./screens/dday-screen";
 import { RentScreen } from "./screens/rent-screen";
 import { ReportScreen } from "./screens/report-screen";
 import { Footer, Header } from "./shell/header";
+import { Assistant } from "./assistant/assistant";
 
 /** 분석 중 화면을 최소한 보여 주는 시간 */
 const MIN_ANALYZING_MS = 1200;
@@ -173,6 +174,8 @@ export function HomeEtApp() {
       </main>
       <Footer className={onInput ? "max-md:hidden" : undefined} />
       <MyReportsDialog />
+      {/* 오른쪽 아래 도우미 (등본 확인·특약 물어보기). 입력·분석 중 화면에서는 숨김 */}
+      {ready && state.step >= 2 && <Assistant deposit={state.leaseDeposit} />}
     </ReportsProvider>
   );
 }
