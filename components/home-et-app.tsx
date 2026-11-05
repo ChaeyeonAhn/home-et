@@ -40,14 +40,13 @@ export function HomeEtApp() {
       const qs = params.toString();
       window.history.replaceState(null, "", window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash);
     }
-    // 입력 방식 비교 때 A(/step)가 따로 쓰던 저장값도 이어받음
-    const saved = loggedOut ? INITIAL : (loadState(STORAGE_KEY) ?? loadState(`${STORAGE_KEY}:step`) ?? INITIAL);
+    const saved = loggedOut ? INITIAL : (loadState(STORAGE_KEY) ?? INITIAL);
     const contract = saved.contract || toInput(addDays(now, 5));
     const balance = saved.balance || toInput(addDays(now, 41));
     // 시작 화면에서 로그인하고 돌아온 경우(?reports=1 목록 열기, ?start=1 검사 시작)엔
     // 마지막으로 보던 단계(리포트 등)를 복원하지 않고 시작 화면에서 이어 감
     const fromLanding = params.has("reports") || params.has("start");
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- 브라우저 전용 값(localStorage, 오늘 날짜)으로 초기화
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 브라우저 전용 값(sessionStorage, 오늘 날짜)으로 초기화
     setToday(now);
     setState({ ...saved, contract, balance, ...(fromLanding && { step: 1 as const }) });
   }, []);
