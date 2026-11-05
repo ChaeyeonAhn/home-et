@@ -142,19 +142,19 @@ function RegionMap({
             <Pin background="#e8894d" borderColor="#a6420a" glyphColor="#2a1405" />
           </AdvancedMarker>
           {regions.map((rg) => (
-            <AdvancedMarker key={rg.id} position={{ lat: rg.lat, lng: rg.lng }} title={`${rg.name} 선택`} onClick={() => onPick(rg)}>
+            <AdvancedMarker key={rg.id} position={{ lat: rg.lat, lng: rg.lng }} title={`${rg.name} 선택 · 월세 중앙값 ${Math.round(rg.rentMedian / 10_000)}만 원`} onClick={() => onPick(rg)}>
               <span
                 className={`block rounded-full px-3 py-1.5 text-xs font-bold shadow-md ${
                   rg.id === selectedId ? "bg-primary text-on-primary" : "bg-surface text-fg"
                 }`}
               >
-                {rg.name}
+                {rg.name} <span className="font-normal opacity-80">{Math.round(rg.rentMedian / 10_000)}만</span>
               </span>
             </AdvancedMarker>
           ))}
         </GoogleMap>
       </div>
-      <FinePrint className="mt-1.5 text-right text-[11px]">지도 © Google · 동네 이름을 눌러도 고를 수 있어요</FinePrint>
+      <FinePrint className="mt-1.5 text-right text-[11px]">지도 © Google · 숫자는 월세 중앙값 · 동네 이름을 눌러도 고를 수 있어요</FinePrint>
     </div>
   );
 }

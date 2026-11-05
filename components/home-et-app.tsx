@@ -44,14 +44,13 @@ export function HomeEtApp() {
       const qs = params.toString();
       window.history.replaceState(null, "", window.location.pathname + (qs ? `?${qs}` : "") + window.location.hash);
     }
-    // 입력 방식 비교 때 A(/step)가 따로 쓰던 저장값도 이어받음
-    const saved = loggedOut ? INITIAL : (loadState(STORAGE_KEY) ?? loadState(`${STORAGE_KEY}:step`) ?? INITIAL);
+    const saved = loggedOut ? INITIAL : (loadState(STORAGE_KEY) ?? INITIAL);
     const contract = saved.contract || toInput(addDays(now, 5));
     const balance = saved.balance || toInput(addDays(now, 41));
     // 시작 화면에서 로그인하고 돌아온 경우(?reports=1 목록 열기, ?start=1 검사 시작)엔
     // 마지막으로 보던 단계(리포트 등)를 복원하지 않고 시작 화면에서 이어 감
     const fromLanding = params.has("reports") || params.has("start");
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- 브라우저 전용 값(localStorage, 오늘 날짜)으로 초기화
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 브라우저 전용 값(sessionStorage, 오늘 날짜)으로 초기화
     setToday(now);
     setState({ ...saved, contract, balance, ...(fromLanding && { step: 1 as const }) });
   }, []);
@@ -64,9 +63,14 @@ export function HomeEtApp() {
     (patch: Partial<AppState>) =>
       setState((s) => {
         const next = { ...s, ...patch };
+        // 단계를 옮기면 지금까지 가 본 가장 먼 단계를 기억 → 상단 메뉴로 그 단계까지 오갈 수 있음
+        if (patch.step) next.maxStep = Math.max(s.maxStep, patch.step) as StepNo;
         // 대학생활 목표가 바뀌면 예전 가치관 분석은 무효 → 다시 검사해야 리포트가 열림
         // (안 그러면 상단 메뉴로 리포트에 갔을 때 바꾸기 전 분석이 그대로 보임)
-        if (s.analysis && goalText(next) !== goalText(s)) next.analysis = null;
+        if (s.analysis && goalText(next) !== goalText(s)) {
+          next.analysis = null;
+          next.maxStep = 1;
+        }
         return next;
       }),
     [],
@@ -119,10 +123,10 @@ export function HomeEtApp() {
 
   return (
     <ReportsProvider state={state} ready={today !== null} onLoad={loadReport} runId={runId}>
-      {/* 상단 메뉴로는 지금·이전 단계로만. 다음 단계는 각 화면의 버튼(검사 시작 → 그래도 자취하기 → 계약 일정 등록)으로만 넘어감 */}
+      {/* 상단 메뉴로는 한 번 가 본 단계까지만. 처음 가는 단계는 각 화면의 버튼(검사 시작 → 그래도 자취하기 → 계약 일정 등록)으로만 */}
       <Header
         step={state.step}
-        canVisit={(no) => no <= state.step}
+        canVisit={(no) => no <= state.maxStep && (no === 1 || ready)}
         onNavigate={go}
         onHome={() => {
           // 로고: 입력은 그대로 두고 시작 화면(소개 + 기존 리포트 보기 / 검사 시작)으로

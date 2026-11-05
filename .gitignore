@@ -41,3 +41,7 @@ yarn-error.log*
 next-env.d.ts
 
 !.env.example
+
+# 공공데이터 원본·정리본 (용량이 커서 커밋하지 않음)
+/data/raw/
+/data/rows/

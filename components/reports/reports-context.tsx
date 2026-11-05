@@ -14,7 +14,7 @@ type SavedRef = { id: string; hash: string };
 const REF_KEY = "home-et:v1:saved-ref";
 const readRef = (): SavedRef | null => {
   try {
-    const v = JSON.parse(localStorage.getItem(REF_KEY) ?? "null");
+    const v = JSON.parse(sessionStorage.getItem(REF_KEY) ?? "null");
     return v && typeof v.id === "string" && typeof v.hash === "string" ? v : null;
   } catch {
     return null;
@@ -24,8 +24,8 @@ const readRef = (): SavedRef | null => {
 export const clearSavedRef = () => writeRef(null);
 const writeRef = (v: SavedRef | null) => {
   try {
-    if (v) localStorage.setItem(REF_KEY, JSON.stringify(v));
-    else localStorage.removeItem(REF_KEY);
+    if (v) sessionStorage.setItem(REF_KEY, JSON.stringify(v));
+    else sessionStorage.removeItem(REF_KEY);
   } catch {
     /* 저장소를 못 쓰면 이번 방문 동안만 기억 */
   }
@@ -102,7 +102,7 @@ export function ReportsProvider({
   state: AppState;
   /** 새로 검사할 때마다 바뀌는 값. 바뀌면 '저장 리포트를 고치는 중' 표시를 지움 (새 결과는 새로 저장) */
   runId: number;
-  /** localStorage 복원이 끝났는지 (그 전엔 저장 지문을 읽지 않음) */
+  /** sessionStorage 복원이 끝났는지 (그 전엔 저장 지문을 읽지 않음) */
   ready: boolean;
   /** 저장된 리포트를 현재 상태로 불러오기 */
   onLoad: (s: AppState) => void;
@@ -125,7 +125,7 @@ export function ReportsProvider({
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- 브라우저 전용 값(localStorage)으로 초기화
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- 브라우저 전용 값(sessionStorage)으로 초기화
     if (ready) setRefState(readRef());
   }, [ready]);
 
@@ -219,7 +219,7 @@ export function ReportsProvider({
         const { report } = await api<{ report: SavedReport }>(`/api/reports/${id}`);
         const loaded = migrateState(report.input);
         if (!loaded?.analysis) throw new ApiError("invalid");
-        const next: AppState = { ...loaded, step: 2, decision: null };
+        const next: AppState = { ...loaded, step: 2, maxStep: Math.max(loaded.maxStep, 2) as AppState["maxStep"], decision: null };
         onLoad(next);
         setRef({ id: report.id, hash: inputHash(next) });
         setDialog({ open: false, notice: null });

@@ -24,6 +24,8 @@ export const goalText = (s: Pick<AppState, "goalTags" | "goal">) =>
 
 export interface AppState {
   step: StepNo;
+  /** 버튼으로 가 본 가장 먼 단계. 상단 메뉴는 여기까지만 열림 */
+  maxStep: StepNo;
   schoolId: string;
   home: string;
   /** 고른 통학 경로(RouteOption.key). "manual" = 직접 입력, null = 아직 안 고름 */
@@ -50,6 +52,7 @@ const firstRegion = firstSchool.regions[0];
 
 export const INITIAL: AppState = {
   step: 1,
+  maxStep: 1,
   schoolId: firstSchool.id,
   home: "경기 남양주시 별내동",
   routeKey: null,
@@ -106,7 +109,7 @@ const OLD_DEFAULT_GOAL ="학점 관리를 제대로 하고 싶고, 통학 때문
 export const STORAGE_KEY = "home-et:v1";
 export function loadState(key = STORAGE_KEY): AppState | null {
   try {
-    const raw = localStorage.getItem(key);
+    const raw = sessionStorage.getItem(key);
     if (!raw) return null;
     return migrateState(JSON.parse(raw));
   } catch {
@@ -115,7 +118,7 @@ export function loadState(key = STORAGE_KEY): AppState | null {
 }
 
 /**
- * 저장값(localStorage·저장된 리포트) → 현재 AppState. 예전 형식을 옮기고 빠진 값은 기본값으로 채운다.
+ * 저장값(sessionStorage·저장된 리포트) → 현재 AppState. 예전 형식을 옮기고 빠진 값은 기본값으로 채운다.
  * 객체가 아니면 null.
  */
 export function migrateState(input: unknown): AppState | null {
@@ -133,6 +136,8 @@ export function migrateState(input: unknown): AppState | null {
     delete parsed.pct;
   }
   parsed.adj = sanitizeAdjust(parsed.adj ?? NEUTRAL);
+  // maxStep 도입 전 저장값: 분석이 있으면 지금 단계까지 가 본 것으로
+  if (!parsed.maxStep) parsed.maxStep = parsed.analysis ? (parsed.step ?? 1) : 1;
   // 예전 초기 비용 기본값(165만, 80만: 중개보수 포함)이면 새 기본값(중개보수 제외)으로, 직접 고친 값은 유지
   const costs = parsed.costs ? { ...parsed.costs } : undefined;
   if (costs && LEGACY_INITIAL_TOTALS.includes(costs.initialTotal ?? -1)) costs.initialTotal = DEFAULT_COSTS.initialTotal;
@@ -147,7 +152,7 @@ export function migrateState(input: unknown): AppState | null {
 
 export function saveState(s: AppState, key = STORAGE_KEY) {
   try {
-    localStorage.setItem(key, JSON.stringify(s));
+    sessionStorage.setItem(key, JSON.stringify(s));
   } catch {
     /* 저장소를 못 쓰는 환경이면 그냥 넘어감 */
   }

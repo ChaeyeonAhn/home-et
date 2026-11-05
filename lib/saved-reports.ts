@@ -9,7 +9,7 @@ export const MAX_BODY_BYTES = 32_000;
 export const SCHEMA_VERSION = 1;
 
 /** 저장하는 입력 = AppState에서 화면 위치(step)·일시 선택(decision)을 뺀 것 */
-export type ReportInput = Omit<AppState, "step" | "decision">;
+export type ReportInput = Omit<AppState, "step" | "maxStep" | "decision">;
 
 export interface ReportSummary {
   index: number; // 자취지수 0~100
@@ -33,7 +33,7 @@ export type ReportsError = "unauthorized" | "disabled" | "full" | "not_found" | 
 
 export function toInput(s: AppState): ReportInput {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars -- 저장에서 빼는 필드
-  const { step, decision, ...rest } = s;
+  const { step, maxStep, decision, ...rest } = s;
   return rest;
 }
 

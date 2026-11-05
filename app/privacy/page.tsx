@@ -32,7 +32,7 @@ export default function PrivacyPage() {
       <Card className="space-y-7">
         <Section title="1. 저장하는 정보">
           <p>
-            <b className="text-fg">로그인하지 않으면</b> 입력한 내용은 내 브라우저(localStorage)에만 저장되고, 서버에는 저장하지 않습니다.
+            <b className="text-fg">로그인하지 않으면</b> 입력한 내용은 지금 연 브라우저 탭(sessionStorage)에만 저장되고, 탭이나 브라우저를 닫으면 지워집니다. 서버에는 저장하지 않습니다.
           </p>
           <p>
             <b className="text-fg">Google로 로그인하면</b> 이름, 이메일, 프로필 사진, Google 계정 고유 ID를 받아 로그인 상태를 유지합니다. 이 정보는
