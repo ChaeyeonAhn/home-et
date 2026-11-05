@@ -203,7 +203,7 @@ function DdayArt() {
     <ul className="space-y-1.5">
       {rows.map((r) => (
         <li key={r.title} className="flex items-center gap-3 rounded-control bg-surface/70 px-2.5 py-2">
-          <Badge tone={r.tone} className="h-7 w-12 shrink-0 rounded-lg px-0">
+          <Badge tone={r.tone} className="h-7 w-12 shrink-0 rounded-lg px-0!">
             {r.badge}
           </Badge>
           <span className="min-w-0">

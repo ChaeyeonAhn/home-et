@@ -126,7 +126,7 @@ export function TimelineItem({
             : "border-primary/50 bg-primary-soft/70",
       )}
     >
-      <Badge tone={badgeTone} className="h-9 w-15 shrink-0 rounded-lg px-0 text-sm">
+      <Badge tone={badgeTone} className="h-9 w-15 shrink-0 rounded-lg px-0! text-sm">
         {badge}
       </Badge>
       <span className="min-w-0 flex-1">
