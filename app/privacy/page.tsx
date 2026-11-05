@@ -46,7 +46,7 @@ export default function PrivacyPage() {
             <b className="text-fg">계약 D-day를 Google 캘린더에 등록하면</b> 그 버튼을 누를 때만 Google 캘린더 일정 권한(
             <code className="text-[13px]">calendar.events</code>)을 따로 요청합니다. 허용하면 Google이 주는 접근 토큰을 암호화된 로그인 쿠키에만
             담고, 서버나 데이터베이스에는 따로 저장하지 않습니다. 이 권한으로는 HOME:ET가 만든 계약 단계 일정(단계 이름, 할 일, 날짜)만 기본
-            캘린더에 넣고, 다시 등록할 때 고치거나 지웁니다. 기존 일정은 읽지 않습니다.
+            캘린더에 넣고, 다시 등록할 때는 HOME:ET가 붙여 둔 표시로 그 일정만 찾아 고치거나 지웁니다. 다른 일정은 읽지 않습니다.
           </p>
         </Section>
 
