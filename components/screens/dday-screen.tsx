@@ -151,9 +151,6 @@ export function DdayScreen({
             <NumberInput id="rent" suffix="원" step={10_000} value={state.leaseRent} onChange={(v) => update({ leaseRent: v })} />
           </Field>
         </div>
-        <FinePrint className="mt-3">
-          {m.amountText} · {gcalPrimary ? "버튼 하나로 단계별 일정을 내 Google 캘린더에 넣어 드려요." : ".ics 파일은 Google·Apple 캘린더 모두에 가져올 수 있어요."}
-        </FinePrint>
         {!m.valid && (
           <Callout tone="warning" className="mt-2">
             잔금·입주일은 계약일과 같거나 그 뒤여야 해요.

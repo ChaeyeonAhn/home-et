@@ -6,8 +6,8 @@ import type { LivingCosts } from "@/lib/calc";
 import { reportModel } from "@/lib/view-models";
 import { cx } from "@/components/ui/styles";
 import {
-  ActionBar, Badge, BigNumber, Button, Callout, Card, CardTitle, Dialog, Em, Field, FinePrint, LabeledMeter,
-  LinkButton, Meter, NumberInput, Panel, ScaleLabels, SectionLabel, Slider, StatList,
+  ActionBar, Badge, BigNumber, Button, Callout, Card, CardTitle, Dialog, Em, Field, FinePrint, InfoTip, LabeledMeter,
+  Meter, NumberInput, ScaleLabels, SectionLabel, Slider, StatList, useIsDesktop,
 } from "@/components/ui";
 import { SaveReportPanel } from "@/components/reports/report-ui";
 
@@ -20,13 +20,15 @@ export function ReportScreen({
   onStay: () => void;
   onGo: () => void;
 }) {
-  const [showAssumptions, setShowAssumptions] = useState(false);
   const [stayOpen, setStayOpen] = useState(false);
   const closeStay = useCallback(() => setStayOpen(false), []);
   const m = reportModel(state, name);
   const tone = m.recommended ? "primary" : "accent";
   const scoreRef = useRef<HTMLDivElement>(null);
-  const pinned = useScrolledPast(scoreRef);
+  const numberRef = useRef<HTMLDivElement>(null);
+  // 모바일: 점수 카드가 통째로 지나가면 / 데스크톱: 카드가 옆 카드 높이만큼 늘어나 늦게 지나가므로 큰 숫자가 지나가면
+  const desktop = useIsDesktop();
+  const pinned = useScrolledPast(desktop ? numberRef : scoreRef);
 
   return (
     <div className="space-y-5">
@@ -45,11 +47,12 @@ export function ReportScreen({
         </div>
       </div>
 
+      {/* 1행: 자취지수 | 1시간 가격 비교 */}
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,2.2fr)]">
         <div ref={scoreRef}>
           <Card className="h-full">
             <CardTitle aside={<Badge tone={tone}>{m.verdict}</Badge>}>{m.title}</CardTitle>
-            <div className="mt-4">
+            <div ref={numberRef} className="mt-4">
               <BigNumber value={m.index} unit="/ 100" />
             </div>
             <div className="mt-5 space-y-3">
@@ -70,25 +73,9 @@ export function ReportScreen({
                 자취는 통학 1시간을 약 <Em tone="accent">{m.headline.price}</Em>에 되사는 셈이에요. {m.headline.subject} 1시간을 약{" "}
                 <Em>{m.headline.myHour}</Em>어치로 여기고 있어요.
               </p>
-              {/* 되사는 시간이 실제 생활에서 뭔지: 문장 바로 아래 */}
-              <Panel className="grid grid-cols-2 gap-4 text-sm text-fg-sub">
-                <p>
-                  등교일 저녁
-                  <b className="mt-0.5 block text-lg text-fg">{m.eveningGain}</b>
-                </p>
-                <p>
-                  막차 걱정 없는 날
-                  <b className="mt-0.5 block text-lg text-fg">{m.lateDays}</b>
-                </p>
-              </Panel>
               {m.bars.map((b) => (
                 <LabeledMeter key={b.label} {...b} />
               ))}
-              <p className="text-sm text-fg-sub">
-                내 1시간의 가치: {m.hourBasis}
-                <br />
-                {m.summary}
-              </p>
             </div>
           ) : (
             <p className="text-lg font-bold">자취 후 통학 시간이 지금보다 줄지 않아서, 되찾는 시간이 없어요.</p>
@@ -96,28 +83,8 @@ export function ReportScreen({
         </Card>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)]">
-        <Card>
-          <CardTitle meta="학기 중 한 달">한 달 기준 비교</CardTitle>
-          <div className="mt-5 grid gap-6 sm:grid-cols-2">
-            <div className="space-y-2">
-              <SectionLabel tone="primary">자취하면 되찾는 것</SectionLabel>
-              <StatList rows={m.gains} />
-            </div>
-            <div className="space-y-2">
-              <SectionLabel tone="accent">자취하면 더 드는 돈</SectionLabel>
-              <StatList rows={m.costs} />
-            </div>
-          </div>
-
-          <div className="mt-5">
-            <LinkButton onClick={() => setShowAssumptions((v) => !v)} aria-expanded={showAssumptions}>
-              {showAssumptions ? "가정값 접기" : "가정값 직접 고치기"}
-            </LinkButton>
-          </div>
-          {showAssumptions && <Assumptions note={m.brokerageNote} costs={state.costs} onChange={(patch) => update({ costs: { ...state.costs, ...patch } })} />}
-        </Card>
-
+      {/* 2행: 가치관 슬라이더 | 가정값 고치기 */}
+      <div className="grid gap-5 lg:grid-cols-2">
         <Card>
           <CardTitle
             aside={
@@ -130,13 +97,17 @@ export function ReportScreen({
           >
             내 가치관
           </CardTitle>
-          <FinePrint className="mt-1">0 = 보통 대학생 기준. 하나를 바꿔도 나머지는 그대로예요.</FinePrint>
+          <FinePrint className="mt-1">0은 대학생 평균이에요.</FinePrint>
           <div className="mt-5 space-y-6">
             {m.adjust.map((a) => (
               <div key={a.key}>
                 <Slider
-                  label={<b className="text-fg">{a.label}</b>}
-                  sub={a.hint}
+                  label={
+                    <span className="inline-flex items-center gap-1.5">
+                      <b className="text-fg">{a.label}</b>
+                      <InfoTip label={`${a.label} 설명`}>{a.hint}</InfoTip>
+                    </span>
+                  }
                   display={
                     <>
                       <span className="mr-1.5 font-normal text-fg-sub">{a.level}</span>
@@ -153,7 +124,6 @@ export function ReportScreen({
                 />
                 <div className="mt-1.5 flex justify-between text-xs text-fg-muted">
                   <span>덜 중요</span>
-                  <span>{a.perStep}</span>
                   <span>더 중요</span>
                 </div>
               </div>
@@ -161,12 +131,40 @@ export function ReportScreen({
           </div>
           {m.reason && (
             <Callout tone="neutral" className="mt-5">
-              {m.reason.text}
-              {m.reason.fallbackNote && <span className="mt-1 block text-fg-muted">{m.reason.fallbackNote}</span>}
+              {m.reason}
             </Callout>
           )}
         </Card>
+
+        <Card>
+          <CardTitle
+            aside={
+              <InfoTip label="가정값 계산 기준">
+                자취 후 왕복 20분, 한 달 = 주당 등교일 × 4.3일(학기 중 기준), 피로 계수 = 0.15 + 0.1 × 환승 횟수(최대 0.5)로 계산해요.
+                <span className="mt-1.5 block">{m.brokerageNote}</span>
+              </InfoTip>
+            }
+          >
+            가정값 고치기
+          </CardTitle>
+          <Assumptions costs={state.costs} onChange={(patch) => update({ costs: { ...state.costs, ...patch } })} />
+        </Card>
       </div>
+
+      {/* 3행: 한 달 기준 비교 */}
+      <Card>
+        <CardTitle meta="학기 중 한 달">한 달 기준 비교</CardTitle>
+        <div className="mt-5 grid gap-6 sm:grid-cols-2 sm:gap-10">
+          <div className="space-y-2">
+            <SectionLabel tone="primary">자취하면 되찾는 것</SectionLabel>
+            <StatList rows={m.gains} />
+          </div>
+          <div className="space-y-2">
+            <SectionLabel tone="accent">자취하면 더 드는 돈</SectionLabel>
+            <StatList rows={m.costs} />
+          </div>
+        </div>
+      </Card>
 
       <SaveReportPanel />
 
@@ -214,7 +212,7 @@ export function ReportScreen({
   );
 }
 
-function Assumptions({ costs, note, onChange }: { costs: LivingCosts; note: string; onChange: (patch: Partial<LivingCosts>) => void }) {
+function Assumptions({ costs, onChange }: { costs: LivingCosts; onChange: (patch: Partial<LivingCosts>) => void }) {
   const fields: { label: string; key: keyof LivingCosts; step: number }[] = [
     { label: "월세 (학교 주변 기본값)", key: "rent", step: 10_000 },
     { label: "관리비", key: "mgmt", step: 10_000 },
@@ -223,16 +221,15 @@ function Assumptions({ costs, note, onChange }: { costs: LivingCosts; note: stri
     { label: "보증금", key: "deposit", step: 1_000_000 },
   ];
   return (
-    <Panel className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
+    <div className="mt-5 grid grid-cols-2 gap-3">
       {fields.map((f) => (
         <Field key={f.key} compact label={f.label} htmlFor={`as-${f.key}`}>
-          <NumberInput id={`as-${f.key}`} tone="inset" size="sm" suffix="원" step={f.step} value={costs[f.key]} onChange={(v) => onChange({ [f.key]: v })} />
+          <NumberInput id={`as-${f.key}`} size="sm" suffix="원" step={f.step} value={costs[f.key]} onChange={(v) => onChange({ [f.key]: v })} />
         </Field>
       ))}
       <Field compact label="보증금 기회비용 연이율" htmlFor="as-rate">
         <NumberInput
           id="as-rate"
-          tone="inset"
           size="sm"
           suffix="%"
           step={0.1}
@@ -240,11 +237,7 @@ function Assumptions({ costs, note, onChange }: { costs: LivingCosts; note: stri
           onChange={(v) => onChange({ annualRate: v / 100 })}
         />
       </Field>
-      <FinePrint className="col-span-2 md:col-span-3">
-        자취 후 왕복 20분, 한 달 = 주당 등교일 × 4.3일(학기 중 기준), 피로 계수 = 0.15 + 0.1 × 환승 횟수(최대 0.5)로 계산해요. 모두 팀 확정 전 초안이에요.
-        <span className="mt-1 block">{note}</span>
-      </FinePrint>
-    </Panel>
+    </div>
   );
 }
 
