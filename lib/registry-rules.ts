@@ -12,6 +12,7 @@ export interface RegistryResult {
   signals: Signal[];
   laws: Record<string, { label: string; url: string }>; // 신호에 붙은 조문 id → 이름·법제처 링크
   differences: string[] | null; // text+gemini일 때 서로 다른 곳 (빈 배열 = 일치)
+  canVerify: boolean; // Gemini 교차 검증(mode=verify)을 이어서 할 수 있음
 }
 
 /**

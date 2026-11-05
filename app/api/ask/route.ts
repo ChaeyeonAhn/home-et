@@ -7,9 +7,15 @@
 import { GoogleGenAI, type GenerateContentResponse } from "@google/genai";
 import { z } from "zod";
 import data from "@/data/law-chunks.json";
+import { generateWithFallback } from "@/lib/gemini";
 import { buildIndex, search, type AskResult, type AskSource, type LawChunk } from "@/lib/law-search";
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-flash-lite-latest";
+// File Search(7~15초) + 실패 시 대체 경로까지 기본 실행 시간 제한에 걸리지 않게
+export const maxDuration = 60;
+
+// 모델마다 시간 제한 [기본, 예비]. File Search + 대체 경로를 다 써도 maxDuration 안
+const FILE_SEARCH_TIMEOUTS = [14_000, 18_000];
+const BM25_TIMEOUTS = [10_000, 14_000];
 const STORE = process.env.GEMINI_FILE_SEARCH_STORE; // scripts/build-file-search.mts가 출력하는 이름
 const TOP_K = 5;
 const MAX_QUESTION = 500;
@@ -68,16 +74,14 @@ function groundedChunks(res: GenerateContentResponse): LawChunk[] {
 }
 
 async function askFileSearch(ai: GoogleGenAI, question: string): Promise<AskResult> {
-  const res = await ai.models.generateContent({
-    model: MODEL,
+  const { res } = await generateWithFallback(ai, {
     contents: question,
     config: {
       systemInstruction: SYSTEM_FILE_SEARCH,
       tools: [{ fileSearch: { fileSearchStoreNames: [STORE!], topK: TOP_K } }],
       temperature: 0.2,
-      abortSignal: AbortSignal.timeout(25_000),
     },
-  });
+  }, FILE_SEARCH_TIMEOUTS);
   const answer = res.text?.trim();
   const grounded = groundedChunks(res);
   // 근거가 하나도 안 잡히면 지어낸 답일 수 있어서 쓰지 않음
@@ -87,17 +91,15 @@ async function askFileSearch(ai: GoogleGenAI, question: string): Promise<AskResu
 
 async function askBm25(ai: GoogleGenAI, question: string, hits: LawChunk[]): Promise<AskResult> {
   const context = hits.map((c, i) => `[S${i + 1}] ${labelOf(c)}\n${c.text}`).join("\n\n");
-  const res = await ai.models.generateContent({
-    model: MODEL,
+  const { res } = await generateWithFallback(ai, {
     contents: `질문: ${question}\n\n조문:\n${context}`,
     config: {
       systemInstruction: SYSTEM_BM25,
       responseMimeType: "application/json",
       responseJsonSchema: JSON_SCHEMA,
       temperature: 0.2,
-      abortSignal: AbortSignal.timeout(20_000),
     },
-  });
+  }, BM25_TIMEOUTS);
   const parsed = Schema.safeParse(JSON.parse(res.text ?? ""));
   if (!parsed.success) throw new Error("schema mismatch");
 
@@ -130,7 +132,8 @@ export async function POST(req: Request) {
     try {
       return Response.json(await askFileSearch(ai, question));
     } catch (err) {
-      console.error("[ask] File Search 실패, BM25로 대체:", err);
+      // 근거를 못 찾는 질문은 정상적인 대체 경로라 스택 없이 한 줄만
+      console.warn(`[ask] File Search → BM25로 대체: ${err instanceof Error ? err.message : err}`);
     }
   }
   if (hits.length === 0) return Response.json(searchOnly);

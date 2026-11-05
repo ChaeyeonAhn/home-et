@@ -33,21 +33,47 @@ export function RegistryCheck({ deposit }: { deposit: number }) {
   const [result, setResult] = useState<RegistryResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [verify, setVerify] = useState<"idle" | "running" | "failed">("idle");
+  const runId = useRef(0); // 새로 검사하면 이전 교차 검증 결과는 버림
+
+  const send = (mode: "text" | "verify") => {
+    const body = new FormData();
+    body.set("file", file!);
+    body.set("mode", mode);
+    body.set("deposit", String(deposit));
+    if (price > 0) body.set("price", String(price));
+    if (landlord.trim()) body.set("landlord", landlord.trim());
+    return fetch("/api/registry", { method: "POST", body });
+  };
+
+  /** Gemini 교차 검증: 결과를 먼저 보여 준 뒤 따로 돌림. 실패해도(붐빔 등) 앞의 결과는 그대로 */
+  const runVerify = async (id: number) => {
+    setVerify("running");
+    try {
+      const res = await send("verify");
+      if (!res.ok) throw new Error(String(res.status));
+      const json = (await res.json()) as RegistryResult;
+      if (runId.current !== id) return;
+      setResult(json);
+      setVerify("idle");
+    } catch {
+      if (runId.current === id) setVerify("failed");
+    }
+  };
 
   const check = async () => {
     if (!file || loading) return;
+    const id = ++runId.current;
     setLoading(true);
     setError(null);
+    setVerify("idle");
     try {
-      const body = new FormData();
-      body.set("file", file);
-      body.set("deposit", String(deposit));
-      if (price > 0) body.set("price", String(price));
-      if (landlord.trim()) body.set("landlord", landlord.trim());
-      const res = await fetch("/api/registry", { method: "POST", body });
+      const res = await send("text");
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error ?? "등기부등본을 읽지 못했어요.");
-      setResult(json as RegistryResult);
+      const r = json as RegistryResult;
+      setResult(r);
+      if (r.canVerify) void runVerify(id);
     } catch (e) {
       setResult(null);
       setError(e instanceof Error ? e.message : "등기부등본을 읽지 못했어요.");
@@ -174,6 +200,16 @@ export function RegistryCheck({ deposit }: { deposit: number }) {
             </div>
           )}
 
+          {verify === "running" && <Callout tone="neutral">Gemini 문서 이해로 한 번 더 읽어 교차 검증하는 중이에요… (10~30초)</Callout>}
+          {verify === "failed" && (
+            <Callout tone="neutral">
+              지금은 Gemini가 붐벼서 교차 검증을 하지 못했어요. 위 결과는 PDF 글자 판독으로 읽은 거예요.{" "}
+              <button type="button" className="font-semibold text-primary underline" onClick={() => void runVerify(runId.current)}>
+                다시 시도
+              </button>
+            </Callout>
+          )}
+
           <FinePrint>
             {SOURCE_NOTE[result.source](result.differences)}
             등기부등본 원문과 다를 수 있으니 중요한 내용은 원문과 공인중개사 설명으로 꼭 확인하세요. 법률 자문이 아니에요.
@@ -181,6 +217,8 @@ export function RegistryCheck({ deposit }: { deposit: number }) {
           <Button
             variant="ghost"
             onClick={() => {
+              runId.current++;
+              setVerify("idle");
               setResult(null);
               setFile(null);
               if (fileRef.current) fileRef.current.value = "";

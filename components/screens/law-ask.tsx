@@ -4,11 +4,12 @@ import { useState } from "react";
 import type { AskResult, AskSource } from "@/lib/law-search";
 import { Button, Callout, Card, CardTitle, FinePrint, QuickChips, SectionLabel, TextArea, TextLink } from "@/components/ui";
 
+/** 예시 질문: 칩에는 짧은 이름, 누르면 전체 질문을 보냄 (근거 조문이 확실히 나오는 질문으로 고름) */
 const EXAMPLES = [
-  "잔금일까지 근저당을 설정하지 않는다는 특약, 꼭 넣어야 해요?",
-  "집주인이 재계약 때 월세를 10% 올린대요",
-  "보일러가 고장 나면 수리는 누가 해요?",
-  "계약 끝났는데 보증금을 못 돌려받으면 어떡해요?",
+  { label: "월세 10% 인상", question: "집주인이 재계약 때 월세를 10% 올린대요" },
+  { label: "보일러 수리는 누가?", question: "보일러가 고장 나면 수리는 누가 해요?" },
+  { label: "보증금을 못 돌려받으면?", question: "계약 끝났는데 보증금을 못 돌려받으면 어떡해요?" },
+  { label: "집주인이 바뀌면?", question: "집주인이 바뀌면 저는 나가야 하나요?" },
 ];
 
 const SOURCE_NOTE: Record<AskResult["source"], string> = {
@@ -61,7 +62,7 @@ export function LawAsk() {
           }}
           placeholder="계약서 문장이나 궁금한 점을 적어 주세요. 예: 나갈 때 벽지 원상복구를 해야 하나요?"
         />
-        <QuickChips label="예시 질문" items={EXAMPLES.map((q) => ({ value: q, label: q }))} onSelect={(q) => ask(q)} />
+        <QuickChips label="예시 질문" items={EXAMPLES.map((e) => ({ value: e.question, label: e.label }))} onSelect={(q) => ask(q)} />
         <div className="flex justify-end">
           <Button onClick={() => ask()} disabled={!question.trim() || loading}>
             {loading ? "조문 찾는 중…" : "물어보기"}
