@@ -43,6 +43,7 @@ npm run dev
 | 환경 변수 | 용도 | 없으면 |
 | --- | --- | --- |
 | `GEMINI_API_KEY` | 가치관 조정값 추출 (`/api/weights`, few-shot) | 키워드 기반 대체 분석 |
+| `GEMINI_FILE_SEARCH_STORE`, `GEMINI_FILE_SEARCH_API_KEY` | 법령 질문 File Search (`/api/ask`). 저장소는 만든 키의 프로젝트에 묶여서 그 키를 따로 넣음 (없으면 `GEMINI_API_KEY`) | BM25 + Gemini로 대체 |
 | `GEMINI_MODEL` | 모델 교체 (기본 `gemini-3.8-flash`) | 기본값 |
 | `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google 로그인 (Auth.js) | 로그인 버튼 숨김 |
 | `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` | 리포트 저장 (Firestore, 서버 전용 서비스 계정). 로그인 env와 함께 있어야 켜짐 | 저장 기능 숨김 |
