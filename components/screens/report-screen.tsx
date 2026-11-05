@@ -6,7 +6,7 @@ import type { LivingCosts } from "@/lib/calc";
 import { reportModel } from "@/lib/view-models";
 import { cx } from "@/components/ui/styles";
 import {
-  ActionBar, Badge, BigNumber, Button, Callout, Card, CardTitle, Dialog, Em, Field, FinePrint, InfoTip, LabeledMeter,
+  ActionBar, Badge, BigNumber, Button, Callout, Card, CardTitle, Dialog, Em, ColumnBars, Field, FinePrint, InfoTip,
   Meter, NumberInput, ScaleLabels, SectionLabel, Slider, StatList, useIsDesktop,
 } from "@/components/ui";
 import { SaveReportPanel } from "@/components/reports/report-ui";
@@ -47,8 +47,8 @@ export function ReportScreen({
         </div>
       </div>
 
-      {/* 1행: 자취지수 | 1시간 가격 비교 */}
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,2.2fr)]">
+      {/* 1행: 자취지수 | 1시간 가격 비교 (반반) */}
+      <div className="grid gap-5 lg:grid-cols-2">
         <div ref={scoreRef}>
           <Card className="h-full">
             <CardTitle aside={<Badge tone={tone}>{m.verdict}</Badge>}>{m.title}</CardTitle>
@@ -61,21 +61,20 @@ export function ReportScreen({
             </div>
             <div className="mt-5">
               <StatList rows={m.indexLines} />
-              <FinePrint className="mt-2">{m.indexNote}</FinePrint>
             </div>
           </Card>
         </div>
 
         <Card>
           {m.hasSavedTime ? (
-            <div className="space-y-5">
+            <div className="flex h-full flex-col gap-6">
               <p className="text-lg font-bold leading-snug sm:text-xl">
                 자취는 통학 1시간을 약 <Em tone="accent">{m.headline.price}</Em>에 되사는 셈이에요. {m.headline.subject} 1시간을 약{" "}
                 <Em>{m.headline.myHour}</Em>어치로 여기고 있어요.
               </p>
-              {m.bars.map((b) => (
-                <LabeledMeter key={b.label} {...b} />
-              ))}
+              <div className="mt-auto">
+                <ColumnBars items={m.bars} />
+              </div>
             </div>
           ) : (
             <p className="text-lg font-bold">자취 후 통학 시간이 지금보다 줄지 않아서, 되찾는 시간이 없어요.</p>
@@ -95,19 +94,25 @@ export function ReportScreen({
               )
             }
           >
-            내 가치관
+            <span className="inline-flex items-center gap-1.5">
+              내 가치관
+              <InfoTip label="가치관 항목 설명">
+                <span className="block space-y-1.5">
+                  {m.adjust.map((a) => (
+                    <span key={a.key} className="block">
+                      <b className="text-fg">{a.label}</b> · {a.hint}
+                    </span>
+                  ))}
+                </span>
+              </InfoTip>
+            </span>
           </CardTitle>
           <FinePrint className="mt-1">0은 대학생 평균이에요.</FinePrint>
           <div className="mt-5 space-y-6">
             {m.adjust.map((a) => (
               <div key={a.key}>
                 <Slider
-                  label={
-                    <span className="inline-flex items-center gap-1.5">
-                      <b className="text-fg">{a.label}</b>
-                      <InfoTip label={`${a.label} 설명`}>{a.hint}</InfoTip>
-                    </span>
-                  }
+                  label={<b className="text-fg">{a.label}</b>}
                   display={
                     <>
                       <span className="mr-1.5 font-normal text-fg-sub">{a.level}</span>
@@ -153,7 +158,7 @@ export function ReportScreen({
 
       {/* 3행: 한 달 기준 비교 */}
       <Card>
-        <CardTitle meta="학기 중 한 달">한 달 기준 비교</CardTitle>
+        <CardTitle>한 달 기준 비교</CardTitle>
         <div className="mt-5 grid gap-6 sm:grid-cols-2 sm:gap-10">
           <div className="space-y-2">
             <SectionLabel tone="primary">자취하면 되찾는 것</SectionLabel>

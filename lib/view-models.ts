@@ -77,7 +77,6 @@ export function reportModel(state: AppState, name: string | null) {
       { label: rawIndex < 0 || rawIndex > 100 ? "자취지수 (0~100으로 자름)" : "자취지수", value: `${r.index.toFixed(1)}점`, total: true },
     ] satisfies Line[],
     brokerageNote: `지금 보증금·월세의 중개보수 법정 상한은 ${man(r.brokerage)}이에요(부가세 별도). 이사·가구가전과 함께 24개월로 나눠 초기 비용에 넣어요.`,
-    indexNote: `점수는 월 순이득에 비례해요. 1점 ≈ ${man(r.scale / 50)}`,
     adjust: WEIGHT_LABELS.map(({ key, label, hint }) => ({
       key,
       label,
