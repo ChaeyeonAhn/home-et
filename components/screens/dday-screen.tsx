@@ -4,12 +4,10 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import type { AppState } from "@/lib/app-state";
 import { WRONG_ACCOUNT, buildIcs, calendarEvents, type Step } from "@/lib/dday";
 import { ddayModel, type DdayItem } from "@/lib/view-models";
-import { LawAsk } from "./law-ask";
-import { RegistryCheck } from "./registry-check";
 import { useAuth } from "@/components/providers";
 import {
   ActionBar, Badge, Button, ButtonAnchor, Callout, Card, CardTitle, Dialog, Eyebrow, Field, FinePrint, LinkButton, NumberInput,
-  PageHeader, SectionLabel, TermCard, TextInput, TextLink, TimelineItem, type BadgeTone,
+  SectionLabel, TermCard, TextInput, TextLink, TimelineItem, type BadgeTone,
 } from "@/components/ui";
 import { cx, focusRing } from "@/components/ui/styles";
 
@@ -146,14 +144,19 @@ export function DdayScreen({
 
   return (
     <div>
-      <PageHeader title="첫 계약, 언제 무엇을 하면 될까?" sub="날짜만 넣으면 단계별 D-day를 알려 드리고, 그때 꼭 알아야 할 용어를 쉽게 풀어 드려요." />
+      {/* 데스크톱은 한 화면에 들어가게 제목 영역을 조금 작게 */}
+      <div className="mb-7">
+        <h1 className="text-2xl font-bold tracking-tight sm:text-[28px] lg:text-2xl">첫 계약, 언제 무엇을 하면 될까?</h1>
+        <p className="mt-2 text-[15px] text-fg-sub">날짜만 넣으면 단계별 D-day를 알려 드리고, 그때 꼭 알아야 할 용어를 쉽게 풀어 드려요.</p>
+      </div>
 
-      {/* 데스크톱(lg): 왼쪽 계약 정보 + 캘린더 버튼 | 오른쪽 가로 타임라인 → 단계 설명 → 용어. 그보다 좁으면: 계약 정보 → 세로 타임라인 */}
-      <div className="grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-stretch">
-        <Card className="flex flex-col">
+      {/* 데스크톱(lg): 왼쪽 계약 정보 + 캘린더 버튼 | 오른쪽 가로 타임라인 → 단계 설명·용어. 그보다 좁으면: 계약 정보 → 세로 타임라인
+          왼쪽 카드는 오른쪽 열과 아래 끝을 맞추고(stretch), 캘린더·돌아가기 버튼은 카드 맨 아래에 (등본·특약은 도우미로 빠져 오른쪽이 짧음) */}
+      <div className="grid gap-5 lg:grid-cols-[340px_minmax(0,1fr)] lg:items-stretch">
+        <Card padding="sm" className="flex flex-col">
           <CardTitle>내 계약 정보</CardTitle>
-          {/* 2×2: 계약일 | 잔금·입주일 / 보증금 | 월세, 데스크톱: 한 줄에 하나씩 */}
-          <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-4 lg:grid-cols-1">
+          {/* 2×2: 계약일 | 잔금·입주일 / 보증금 | 월세 (데스크톱도 2×2: 한 화면에 들어가게) */}
+          <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-3">
             <Field label="계약일" htmlFor="contract">
               <TextInput id="contract" type="date" value={state.contract} onChange={(e) => update({ contract: e.target.value })} />
             </Field>
@@ -172,14 +175,27 @@ export function DdayScreen({
               잔금·입주일은 계약일과 같거나 그 뒤여야 해요.
             </Callout>
           )}
-          {/* 데스크톱: 캘린더 버튼은 이 카드 맨 아래 */}
-          <div className="mt-auto hidden pt-6 lg:block">
+          {/* 로그인 안 했으면: 로그인하면 캘린더에 바로 넣을 수 있다는 한 줄 (예전엔 따로 카드였는데 한 화면에 들어가게 여기로) */}
+          {gcal.needsLogin && (
+            <p className="mt-3 text-xs leading-relaxed text-fg-sub">
+              로그인하면 단계별 일정을 Google 캘린더에 바로 넣을 수 있어요.{" "}
+              <LinkButton onClick={gcal.signIn} disabled={gcal.signingIn} aria-busy={gcal.signingIn} className="text-xs">
+                {gcal.signingIn ? "이동 중…" : "Google로 로그인"}
+              </LinkButton>
+            </p>
+          )}
+          {/* 데스크톱: 캘린더 버튼·돌아가기·안내를 이 카드 안에 (아래 버튼 줄 없이 한 화면에) */}
+          <div className="mt-auto hidden pt-4 lg:block">
             {calendarButton("w-full")}
             {extras}
+            <Button variant="ghost" size="sm" onClick={onBack} className="mt-2 w-full">
+              ← 월세 추천으로 돌아가기
+            </Button>
+            <FinePrint className="mt-3 text-[11px]">{DISCLAIMER}</FinePrint>
           </div>
         </Card>
 
-        <div className="min-w-0 space-y-5">
+        <div className="min-w-0 space-y-5 lg:space-y-4">
           {m.valid && sel && (
             <>
               {/* 좁은 화면: 세로 타임라인, 고른 단계 설명이 바로 아래 펼쳐짐 */}
@@ -250,42 +266,31 @@ export function DdayScreen({
               </Card>
 
               {/* 데스크톱: 고른 단계 설명 */}
-              <Card className="hidden lg:block">
-                <Eyebrow>
-                  {sel.badge} · {sel.dateText}
-                </Eyebrow>
-                <h2 className="mt-2 text-2xl font-bold tracking-tight">{sel.title}</h2>
-                <p className="mt-3 text-[15px] leading-relaxed text-fg-sub">{sel.todo}</p>
-                <StepCalendarLink href={sel.calendarUrl} />
+              <Card padding="sm" className="hidden lg:block">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <Eyebrow>
+                      {sel.badge} · {sel.dateText}
+                    </Eyebrow>
+                    <h2 className="mt-1 text-xl font-bold tracking-tight">{sel.title}</h2>
+                  </div>
+                  <StepCalendarLink href={sel.calendarUrl} className="mt-0 shrink-0" />
+                </div>
+                <p className="mt-2 text-[15px] leading-relaxed text-fg-sub">{sel.todo}</p>
+                {/* 용어도 같은 카드 안에 (카드 사이 여백을 줄여 한 화면에) */}
+                <Terms terms={sel.terms} className="mt-4" cards />
               </Card>
-
-              {/* 데스크톱: 용어 카드 */}
-              <Terms terms={sel.terms} className="hidden lg:block" cards />
             </>
           )}
 
-          {/* 등기부등본 위험 신호 + 계약서·특약 질문(법령 RAG) */}
-          <RegistryCheck deposit={state.leaseDeposit} />
-          <LawAsk />
+          {/* 등기부등본 확인·계약서 특약 질문은 화면에 두지 않고 오른쪽 아래 도우미(components/assistant)에서 */}
 
-          {/* 로그인 안 했으면: 로그인하면 캘린더에 바로 넣을 수 있다고 안내 (로그인하고 돌아오면 등록 버튼으로 바뀜) */}
-          {gcal.needsLogin && (
-            <Card>
-              <CardTitle>Google 캘린더에 넣기</CardTitle>
-              <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-fg-sub">로그인하면 단계별 일정을 내 Google 캘린더에 바로 넣을 수 있어요.</p>
-                <Button onClick={gcal.signIn} disabled={gcal.signingIn} aria-busy={gcal.signingIn} className="shrink-0">
-                  {gcal.signingIn ? "로그인 화면으로 이동 중…" : "Google로 로그인"}
-                </Button>
-              </div>
-            </Card>
-          )}
         </div>
       </div>
 
       {/* 모바일: 하단 고정 (좁은 '이전' + 캘린더 등록), 태블릿: 오른쪽 정렬 버튼 줄, 데스크톱(lg): 캘린더 버튼은 왼쪽 카드에 있어서 '돌아가기'만 */}
-      <div className="mt-5">
-        {/* 모바일: 고정 바가 차지하는 빈칸 위에, 태블릿: 버튼 줄 아래 */}
+      <div className="mt-5 lg:hidden">
+        {/* 모바일: 고정 바가 차지하는 빈칸 위에, 태블릿: 버튼 줄 아래. 데스크톱은 왼쪽 카드 안에 */}
         <div className="md:hidden">{extras}</div>
         <ActionBar desktopClassName="md:justify-end md:border-0 md:bg-transparent md:p-0 lg:justify-start">
           <Button variant="secondary" size="lg" onClick={onBack} className="max-md:w-24 max-md:flex-none!">
@@ -333,12 +338,12 @@ export function DdayScreen({
         단계마다 전날 오전 9시에 알림이 가요. 날짜를 바꾸고 다시 등록하면 새로 쌓이지 않고 기존 일정이 고쳐져요.
       </Dialog>
 
-      <FinePrint className="mt-6">
-        HOME:ET의 계약 안내는 일반 정보이며 법률 자문이 아니에요. 실제 계약 전에는 등기부등본 원문과 공인중개사 설명을 꼭 함께 확인하세요.
-      </FinePrint>
+      <FinePrint className="mt-6 lg:hidden">{DISCLAIMER}</FinePrint>
     </div>
   );
 }
+
+const DISCLAIMER = "HOME:ET의 계약 안내는 일반 정보이며 법률 자문이 아니에요. 실제 계약 전에는 등기부등본 원문과 공인중개사 설명을 꼭 함께 확인하세요.";
 
 type Selected = NonNullable<ReturnType<typeof ddayModel>["selected"]>;
 
@@ -350,10 +355,10 @@ function Terms({ terms, className, cards }: { terms: Selected["terms"]; classNam
       <div className={cx("grid gap-3", cards ? "grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3.5" : "sm:grid-cols-2")}>
         {terms.map((t) =>
           cards ? (
-            <Card key={t.term} padding="sm" className="h-full">
-              <p className="font-bold text-primary">{t.term}</p>
-              <p className="mt-2 text-sm leading-relaxed text-fg-sub">{t.desc}</p>
-            </Card>
+            <div key={t.term} className="h-full rounded-panel border border-border bg-surface/60 p-3.5">
+              <p className="text-sm font-bold text-primary">{t.term}</p>
+              <p className="mt-1 text-[13px] leading-relaxed text-fg-sub">{t.desc}</p>
+            </div>
           ) : (
             <TermCard key={t.term} term={t.term}>
               {t.desc}
@@ -365,9 +370,9 @@ function Terms({ terms, className, cards }: { terms: Selected["terms"]; classNam
   );
 }
 
-function StepCalendarLink({ href }: { href: string }) {
+function StepCalendarLink({ href, className = "mt-3" }: { href: string; className?: string }) {
   return (
-    <TextLink href={href} target="_blank" rel="noopener noreferrer" className="mt-6">
+    <TextLink href={href} target="_blank" rel="noopener noreferrer" className={className}>
       이 단계만 Google 캘린더에 추가 ↗
     </TextLink>
   );

@@ -1,8 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { REGISTRY_MAX_BYTES, REGISTRY_MAX_MB, type RegistryResult, type Level } from "@/lib/registry-rules";
-import { Badge, Button, Callout, Card, CardTitle, Chip, Field, FinePrint, NumberInput, SectionLabel, TextInput, TextLink, type BadgeTone } from "@/components/ui";
+import { ToolShell } from "./tool-shell";
+import { Badge, Button, Callout, Chip, Field, FinePrint, NumberInput, SectionLabel, TextInput, TextLink, type BadgeTone } from "@/components/ui";
 
 const LEVEL: Record<Level, { label: string; tone: BadgeTone }> = {
   high: { label: "위험", tone: "solidAccent" },
@@ -48,8 +49,10 @@ const man = (won: number) => `${Math.round(won / 10_000).toLocaleString("ko-KR")
  * 등기부등본 PDF → 위험 신호 (/api/registry, docs/registry.md)
  * 파일은 서버에서 읽고 바로 버림. 집주인 이름·시세도 이 화면에만 두고 저장하지 않음
  */
-export function RegistryCheck({ deposit }: { deposit: number }) {
+export function RegistryCheck({ deposit, bare }: { deposit: number; bare?: boolean }) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
+  const scrollToResult = useRef(false); // 새로 검사했을 때만 결과로 내려감 (교차 검증으로 결과가 바뀔 때는 그대로)
   const [file, setFile] = useState<File | null>(null);
   const [landlord, setLandlord] = useState("");
   const [price, setPrice] = useState(0);
@@ -59,6 +62,13 @@ export function RegistryCheck({ deposit }: { deposit: number }) {
   const [verify, setVerify] = useState<"idle" | "running" | "failed">("idle");
   const [masked, setMasked] = useState(true); // 화면 공유·발표 때 이름·주소가 보이지 않게 기본으로 가림
   const runId = useRef(0); // 새로 검사하면 이전 교차 검증 결과는 버림
+
+  // 결과가 입력칸 아래에 생기니, 그려진 뒤 바로 보이게 (도우미 창 안에서는 창만 스크롤됨)
+  useEffect(() => {
+    if (!result || !scrollToResult.current) return;
+    scrollToResult.current = false;
+    resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [result]);
 
   const send = (mode: "text" | "verify") => {
     const body = new FormData();
@@ -96,6 +106,7 @@ export function RegistryCheck({ deposit }: { deposit: number }) {
       const json = await res.json();
       if (!res.ok) throw new Error(json?.error ?? "등기부등본을 읽지 못했어요.");
       const r = json as RegistryResult;
+      scrollToResult.current = true;
       setResult(r);
       if (r.canVerify) void runVerify(id);
     } catch (e) {
@@ -114,13 +125,12 @@ export function RegistryCheck({ deposit }: { deposit: number }) {
   const liveFlags = result?.facts.flags.filter((f) => !f.cancelled) ?? [];
 
   return (
-    <Card>
-      <CardTitle meta="계약 전 · 잔금 전날">등기부등본 확인하기</CardTitle>
+    <ToolShell bare={bare} title="등기부등본 확인하기" meta="계약 전 · 잔금 전날">
       <p className="mt-2 text-sm text-fg-sub">
         인터넷등기소에서 열람한 등기사항전부증명서 PDF를 올리면 소유자, 근저당, 압류 같은 위험 신호를 찾아 드려요.
       </p>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
+      <div className="mt-4 grid gap-3 @2xl:grid-cols-3">
         <Field label="등기부등본 PDF" htmlFor="reg-file">
           <input
             ref={fileRef}
@@ -164,7 +174,7 @@ export function RegistryCheck({ deposit }: { deposit: number }) {
       )}
 
       {result && (
-        <div className="mt-5 space-y-5" aria-live="polite">
+        <div ref={resultRef} className="mt-5 scroll-mt-4 space-y-5" aria-live="polite">
           <div className="rounded-panel bg-surface-muted p-4 text-sm">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <p className="font-bold">
@@ -266,6 +276,6 @@ export function RegistryCheck({ deposit }: { deposit: number }) {
           </Button>
         </div>
       )}
-    </Card>
+    </ToolShell>
   );
 }

@@ -16,6 +16,7 @@ import { DdayScreen } from "./screens/dday-screen";
 import { RentScreen } from "./screens/rent-screen";
 import { ReportScreen } from "./screens/report-screen";
 import { Footer, Header } from "./shell/header";
+import { Assistant } from "./assistant/assistant";
 
 /** 분석 중 화면을 최소한 보여 주는 시간 */
 const MIN_ANALYZING_MS = 1200;
@@ -141,6 +142,8 @@ export function HomeEtApp() {
           "mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 md:py-12",
           // 남은 높이를 질문 화면에 넘겨서 화면 높이를 넘지 않게
           onInput && "max-md:flex max-md:flex-col max-md:p-0",
+          // 계약 D-day는 데스크톱에서 스크롤 없이 한 화면에 들어가게 위아래 여백을 줄임
+          state.step === 4 && "lg:pt-6 lg:pb-3",
         )}
       >
         {analyzing && <AnalyzingScreen state={state} name={name} />}
@@ -171,8 +174,11 @@ export function HomeEtApp() {
         {state.step === 3 && ready && <RentScreen state={state} update={update} name={name} onBack={() => go(2)} onNext={() => go(4)} />}
         {state.step === 4 && ready && today && <DdayScreen state={state} update={update} today={today} onBack={() => go(3)} />}
       </main>
-      <Footer className={onInput ? "max-md:hidden" : undefined} />
+      {/* 계약 D-day는 데스크톱에서 한 화면에 들어가게 푸터 아래 여백을 줄임 */}
+      <Footer className={cx(onInput && "max-md:hidden", state.step === 4 && "lg:pb-4")} />
       <MyReportsDialog />
+      {/* 오른쪽 아래 도우미 (등본 확인·특약 물어보기). 입력·분석 중 화면에서는 숨김 */}
+      {ready && state.step >= 2 && <Assistant deposit={state.leaseDeposit} />}
     </ReportsProvider>
   );
 }
