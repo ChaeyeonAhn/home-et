@@ -88,6 +88,7 @@ export function StepFlow({ state, update, onSubmit, loading, started, onStart: m
 
   const progress = (Math.min(idx, N) / N) * 100;
   const canPrev = idx > 0 || fromReview;
+  const showList = reached === N && !isReview;
 
   return (
     <div
@@ -104,20 +105,16 @@ export function StepFlow({ state, update, onSubmit, loading, started, onStart: m
               튜토리얼 보기
             </LinkButton>
           </SideIntro>
-          <ol className="mt-8 space-y-0.5" aria-label="질문 목록">
-            {QUESTIONS.map((qq, i) => (
-              <li key={qq.id}>
-                <AnswerRow
-                  size="sm"
-                  label={qq.label}
-                  value={i <= reached ? qq.display(state) : "—"}
-                  current={i === idx}
-                  disabled={i > reached}
-                  onClick={() => edit(i)}
-                />
-              </li>
-            ))}
-          </ol>
+          {/* 답 목록은 확인 화면까지 한 번 간 뒤, 항목을 고치러 돌아왔을 때만 (처음 답하는 동안·확인 화면에선 숨김) */}
+          {showList && (
+            <ol className="mt-8 space-y-0.5 motion-safe:animate-rise" aria-label="질문 목록">
+              {QUESTIONS.map((qq, i) => (
+                <li key={qq.id}>
+                  <AnswerRow size="sm" label={qq.label} value={qq.display(state)} current={i === idx} onClick={() => edit(i)} />
+                </li>
+              ))}
+            </ol>
+          )}
         </div>
       </aside>
 
