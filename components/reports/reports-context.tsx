@@ -219,7 +219,7 @@ export function ReportsProvider({
         const { report } = await api<{ report: SavedReport }>(`/api/reports/${id}`);
         const loaded = migrateState(report.input);
         if (!loaded?.analysis) throw new ApiError("invalid");
-        const next: AppState = { ...loaded, step: 2, decision: null };
+        const next: AppState = { ...loaded, step: 2, maxStep: Math.max(loaded.maxStep, 2) as AppState["maxStep"], decision: null };
         onLoad(next);
         setRef({ id: report.id, hash: inputHash(next) });
         setDialog({ open: false, notice: null });
