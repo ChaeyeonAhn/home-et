@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ActionBar, Button, Dialog, useIsDesktop } from "@/components/ui";
+import { ActionBar, Button, Dialog, LinkButton, useIsDesktop } from "@/components/ui";
 import { cx } from "@/components/ui/styles";
 import { HeroEditor, QUESTIONS } from "./questions";
 import { OpenReportsButton } from "@/components/reports/report-ui";
 import { useReports } from "@/components/reports/reports-context";
 import { MAX_REPORTS } from "@/lib/saved-reports";
 import { AnswerRow, IntroFeatures, ProgressBar, SideIntro, allValid, type InputFlowProps } from "./shared";
+import { Tutorial, tutorialUnseen } from "./tutorial";
 
 const N = QUESTIONS.length;
 
@@ -25,6 +26,16 @@ export function StepFlow({ state, update, onSubmit, loading, started, onStart: m
   const [reached, setReached] = useState(returning ? N : 0);
   const [fromReview, setFromReview] = useState(false);
   const desktop = useIsDesktop();
+  const [tutorial, setTutorial] = useState(false);
+
+  // 처음 온 사람에게만 사용법 안내를 자동으로 (이어서 하는 사람, 로그인하고 바로 질문으로 돌아온 사람은 건너뜀)
+  useEffect(() => {
+    if (returning || started || new URL(window.location.href).searchParams.has(START_PARAM) || !tutorialUnseen()) return;
+    const t = setTimeout(() => setTutorial(true), 300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 첫 화면에서 한 번만
+  }, []);
+  const openTutorial = () => setTutorial(true);
 
 
   const begin = () => {
@@ -77,6 +88,7 @@ export function StepFlow({ state, update, onSubmit, loading, started, onStart: m
 
   const progress = (Math.min(idx, N) / N) * 100;
   const canPrev = idx > 0 || fromReview;
+  const showList = reached === N && !isReview;
 
   return (
     <div
@@ -88,21 +100,21 @@ export function StepFlow({ state, update, onSubmit, loading, started, onStart: m
       {/* 데스크톱: 왼쪽에 소개 + 지금까지 답한 것 */}
       <aside className={cx("hidden", started && "md:block")}>
         <div className="sticky top-24">
-          <SideIntro />
-          <ol className="mt-8 space-y-0.5" aria-label="질문 목록">
-            {QUESTIONS.map((qq, i) => (
-              <li key={qq.id}>
-                <AnswerRow
-                  size="sm"
-                  label={qq.label}
-                  value={i <= reached ? qq.display(state) : "—"}
-                  current={i === idx}
-                  disabled={i > reached}
-                  onClick={() => edit(i)}
-                />
-              </li>
-            ))}
-          </ol>
+          <SideIntro>
+            <LinkButton onClick={openTutorial} className="mt-4">
+              튜토리얼 보기
+            </LinkButton>
+          </SideIntro>
+          {/* 답 목록은 확인 화면까지 한 번 간 뒤, 항목을 고치러 돌아왔을 때만 (처음 답하는 동안·확인 화면에선 숨김) */}
+          {showList && (
+            <ol className="mt-8 space-y-0.5 motion-safe:animate-rise" aria-label="질문 목록">
+              {QUESTIONS.map((qq, i) => (
+                <li key={qq.id}>
+                  <AnswerRow size="sm" label={qq.label} value={qq.display(state)} current={i === idx} onClick={() => edit(i)} />
+                </li>
+              ))}
+            </ol>
+          )}
         </div>
       </aside>
 
@@ -110,11 +122,14 @@ export function StepFlow({ state, update, onSubmit, loading, started, onStart: m
       {!started && (
         <div className="flex flex-1 flex-col px-5 pt-8 md:mx-auto md:w-full md:max-w-xl md:flex-none md:rounded-sheet md:border md:border-glass-border md:bg-glass md:p-10 md:shadow-glass md:backdrop-glass">
           <SideIntro>
-            <div className="mt-8">
+            <div className="mt-6">
               <IntroFeatures />
             </div>
           </SideIntro>
-          <p className="mt-6 text-center text-sm text-fg-muted">질문 {N}개에 답하면 바로 결과가 나와요</p>
+          {/* 소개 맨 아래 (모바일: 하단 고정 바 바로 위, 데스크톱: 시작 버튼들 위) */}
+          <Button variant="secondary" size="lg" block onClick={openTutorial} className="mt-6">
+            튜토리얼 보기
+          </Button>
           {/* 저장 기능이 켜져 있으면 '기존 리포트 보기'(위) + '검사 시작'(아래)을 전체 너비로 쌓음 */}
           <ActionBar desktopClassName="md:mt-6 md:flex-col md:border-0 md:bg-transparent md:p-0" stacked={reports.enabled}>
             <OpenReportsButton />
@@ -220,6 +235,7 @@ export function StepFlow({ state, update, onSubmit, loading, started, onStart: m
           </Button>
         </ActionBar>
       </section>
+      <Tutorial open={tutorial} onClose={() => setTutorial(false)} />
     </div>
   );
 }

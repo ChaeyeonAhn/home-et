@@ -3,8 +3,8 @@
  * 디자인을 바꿀 때 화면 JSX만 다시 쓰고, 숫자와 문구는 여기서 그대로 가져다 쓰면 됩니다.
  */
 import {
-  ADJ_MAX, ADJ_MIN, MIN_WAGE_2026, brokerageFee, compute, hm, hours, man, sameAdjust, sanitizeAdjust, signed, won,
-  CONTRACT_MONTHS, type Adjust, type LivingCosts, type WeightKey,
+  ADJ_MAX, ADJ_MIN, brokerageFee, compute, hours, man, sameAdjust, sanitizeAdjust, signed, won,
+  CONTRACT_MONTHS, type LivingCosts, type WeightKey,
 } from "./calc";
 import { findSchool, type Region, type School } from "./data";
 import {
@@ -22,7 +22,6 @@ const LEVELS: Record<number, string> = {
   [-3]: "거의 신경 안 씀", [-2]: "덜 중요", [-1]: "조금 덜 중요", 0: "보통", 1: "조금 중요", 2: "중요", 3: "가장 중요",
 };
 export const levelText = (a: number) => LEVELS[a] ?? "보통";
-export const adjustText = (a: Adjust) => WEIGHT_LABELS.map(({ key, label }) => `${label} ${signed(a[key])}`).join(" · ");
 const pts = (v: number) => `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(1)}점`;
 
 export interface Line { label: string; value: string; total?: boolean }
@@ -54,9 +53,6 @@ export function reportModel(state: AppState, name: string | null) {
       { label: "내가 매기는 1시간의 가치", value: won(myHour), pct: (myHour / scale) * 100, tone: "primary" as const },
       { label: "자취로 1시간을 되사는 가격", value: won(price), pct: (price / scale) * 100, tone: "accent" as const },
     ],
-    // 1시간의 가치 = 최저임금 × (m시간 + f·m체력) / m돈  (= W / ΔH, compute()의 myHourValue와 같은 식)
-    hourBasis: `${won(MIN_WAGE_2026)}(2026 최저임금) × (시간 ×${r.multipliers.time.toFixed(2)} + 체력 ×${r.multipliers.body.toFixed(2)} × 피로 ${r.fatigue.toFixed(2)}) ÷ 돈 ×${r.multipliers.money.toFixed(2)} = ${won(myHour)}`,
-    summary: `한 달에 약 ${hours(r.savedHours)}을 되찾는 대신 약 ${man(r.extraCost, 0)}을 더 써요. 내 1시간의 가치가 자취 가격보다 크면 자취가 이득이에요.`,
     gains: [
       { label: "통학 시간 (여유 시간 포함)", value: hours(r.savedHours) },
       { label: "시간 가치", value: man(r.timeValue) },
@@ -71,8 +67,6 @@ export function reportModel(state: AppState, name: string | null) {
       { label: "보증금 기회비용 · 절약 교통비", value: man(r.depositCost - r.savedFare) },
       { label: "합계", value: man(r.extraCost), total: true },
     ] satisfies Line[],
-    eveningGain: `+${hm(r.savedDailyMin)}`,
-    lateDays: `주 ${state.commute.daysPerWeek}일`,
     nextLabel,
     /** 자취지수 = 50 + 항목별 점수 (선형식이라 그대로 더하면 돼요) */
     indexLines: [
@@ -83,7 +77,6 @@ export function reportModel(state: AppState, name: string | null) {
       { label: rawIndex < 0 || rawIndex > 100 ? "자취지수 (0~100으로 자름)" : "자취지수", value: `${r.index.toFixed(1)}점`, total: true },
     ] satisfies Line[],
     brokerageNote: `지금 보증금·월세의 중개보수 법정 상한은 ${man(r.brokerage)}이에요(부가세 별도). 이사·가구가전과 함께 24개월로 나눠 초기 비용에 넣어요.`,
-    indexNote: `점수는 월 순이득에 비례해요. 1점 ≈ ${man(r.scale / 50)}`,
     adjust: WEIGHT_LABELS.map(({ key, label, hint }) => ({
       key,
       label,
@@ -93,16 +86,11 @@ export function reportModel(state: AppState, name: string | null) {
       max: ADJ_MAX,
       display: signed(state.adj[key]),
       level: levelText(state.adj[key]),
-      perStep: `한 칸에 ${pts(r.pointsPerStep[key])}`,
     })),
     aiAdj,
     isAiValue: !!aiAdj && sameAdjust(aiAdj, state.adj),
-    reason: state.analysis
-      ? {
-          text: `${state.analysis.source === "gemini" ? "AI 분석 근거: " : ""}${state.analysis.reason}`,
-          fallbackNote: state.analysis.source !== "gemini" ? "Gemini API에 연결하지 못해 대체 분석을 썼어요." : null,
-        }
-      : null,
+    // AI(Gemini) 분석일 때만 근거를 보여 줌. 키워드 대체 분석·기본값은 숨김
+    reason: state.analysis?.source === "gemini" ? `AI 분석 근거: ${state.analysis.reason}` : null,
     stayMessage: `등교일이나 시간표가 바뀌면 다시 계산해 보세요. 마음이 바뀌면 언제든 “${nextLabel}”로 넘어갈 수 있어요.`,
   };
 }
@@ -139,10 +127,6 @@ export function rentModel(state: AppState, name: string | null) {
   const cap = man(capWon);
   // 상한 월세에서의 중개보수로 내역을 다시 맞춤 (중개보수가 월세에 따라 달라짐)
   const initialAtCap = (costs.initialTotal + brokerageFee(costs.deposit, capWon)) / CONTRACT_MONTHS;
-  // 보증금을 1,000만 원 더 넣으면 상한이 얼마나 내려가는지
-  const DEPOSIT_STEP = 10_000_000;
-  const more = compute(state.commute, { ...costs, deposit: costs.deposit + DEPOSIT_STEP }, state.adj, livingMin, regionFare(region));
-  const ratePct = Math.round(costs.annualRate * 1000) / 10;
 
   return {
     school,
@@ -167,11 +151,6 @@ export function rentModel(state: AppState, name: string | null) {
       { label: "원룸 월세 중앙값", value: man(region.rentMedian, 0), note: isCustom ? undefined : "(실거래가 1년)" },
       { label: "관리비 중앙값", value: man(region.mgmtMedian, 0), note: isCustom ? undefined : "(가정)" },
     ],
-    depositNote:
-      finite && r.rentCap > 0
-        ? `보증금 ${man(costs.deposit, 0)} 기준이에요. 보증금을 1,000만 원 더 넣으면 상한이 약 ${man(r.rentCap - more.rentCap)} 내려가요. 보증금·월세 조합이 다른 방은 ‘월세 + 보증금 × ${ratePct}% ÷ 12’(환산 월세)가 작은 쪽이 싸요.`
-        : null,
-    weightsNote: `리포트에서 조정한 가치관 기준: ${adjustText(state.adj)} (0 = 보통)`,
     map: { src: mapUrl(school, region), title: `${school.name} 주변 지도` },
   };
 }
@@ -204,6 +183,5 @@ export function ddayModel(state: AppState, today: Date, pickedKey: string | null
         }
       : null,
     todayText: md(today),
-    amountText: `${man(state.leaseDeposit, 0)} / ${man(state.leaseRent, 0)}`,
   };
 }

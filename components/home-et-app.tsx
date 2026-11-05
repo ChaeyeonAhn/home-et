@@ -11,10 +11,14 @@ import { StepFlow } from "./input/step-flow";
 import { useAuth } from "./providers";
 import { MyReportsDialog } from "./reports/report-ui";
 import { ReportsProvider, clearSavedRef } from "./reports/reports-context";
+import { AnalyzingScreen } from "./screens/analyzing-screen";
 import { DdayScreen } from "./screens/dday-screen";
 import { RentScreen } from "./screens/rent-screen";
 import { ReportScreen } from "./screens/report-screen";
 import { Footer, Header } from "./shell/header";
+
+/** 분석 중 화면을 최소한 보여 주는 시간 */
+const MIN_ANALYZING_MS = 1200;
 
 /** 상태·흐름만 담당. 화면 모양은 input/·screens/, 부품은 ui/ 에 있어요. */
 export function HomeEtApp() {
@@ -79,6 +83,8 @@ export function HomeEtApp() {
   const analyze = async () => {
     setLoading(true);
     setRunId((n) => n + 1);
+    window.scrollTo({ top: 0 });
+    const t0 = Date.now();
     try {
       const res = await fetch("/api/weights", {
         method: "POST",
@@ -96,6 +102,9 @@ export function HomeEtApp() {
         adj: NEUTRAL,
       });
     } finally {
+      // 분석이 금방 끝나도 분석 중 화면이 깜빡이고 사라지지 않게 잠깐은 보여 줌
+      const rest = MIN_ANALYZING_MS - (Date.now() - t0);
+      if (rest > 0) await new Promise((r) => setTimeout(r, rest));
       setLoading(false);
       go(2);
     }
@@ -109,7 +118,8 @@ export function HomeEtApp() {
 
   const ready = state.analysis !== null;
   // 모바일 입력 화면: 로고 헤더만 두고 푸터 없이 꽉 찬 화면 (한 화면 한 질문)
-  const onInput = state.step === 1;
+  const onInput = state.step === 1 && !loading;
+  const analyzing = state.step === 1 && loading;
 
   return (
     <ReportsProvider state={state} ready={today !== null} onLoad={loadReport} runId={runId}>
@@ -133,6 +143,7 @@ export function HomeEtApp() {
           onInput && "max-md:flex max-md:flex-col max-md:p-0",
         )}
       >
+        {analyzing && <AnalyzingScreen state={state} name={name} />}
         {onInput && (
           <StepFlow
             // 저장값을 복원한 뒤 한 번 다시 만들어서, 복원된 답 기준으로 진행 상태(확인 화면부터 등)를 잡게 함

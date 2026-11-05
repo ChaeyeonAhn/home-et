@@ -62,6 +62,7 @@
   --animate-step-next: step-next 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
   --animate-step-prev: step-prev 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
   --animate-fade: fade 0.2s ease-out backwards;
+  --animate-flow: flow 1.6s ease-in-out infinite alternate; /* 진행 중 막대 (분석 중 화면) */
 
   @keyframes rise {
     from { opacity: 0; transform: translateY(10px); }
@@ -74,6 +75,10 @@
   }
   @keyframes fade {
     from { opacity: 0; }
+  }
+  @keyframes flow {
+    from { width: 35%; }
+    to { width: 72%; }
   }
 
   /* 글꼴 (app/layout.tsx의 next/font가 --font-noto-kr, --font-outfit을 정의) */

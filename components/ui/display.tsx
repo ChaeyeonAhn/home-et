@@ -55,6 +55,28 @@ export function LabeledMeter({
   );
 }
 
+/** 세로 막대 비교 (값은 막대 위, 라벨은 막대 아래). pct = 가장 큰 값 기준 0~100 */
+export function ColumnBars({
+  items,
+}: { items: { label: ReactNode; value: ReactNode; pct: number; tone?: keyof typeof styles.meter.fill }[] }) {
+  return (
+    <div className="flex items-end justify-center gap-6 sm:gap-10" aria-hidden>
+      {items.map((it, i) => (
+        <div key={i} className="flex w-24 flex-col items-center sm:w-28">
+          <b className="mb-2 text-sm tabular-nums">{it.value}</b>
+          <div className="flex h-40 w-14 items-end overflow-hidden rounded-xl bg-track sm:h-48 sm:w-16">
+            <div
+              className={cx("w-full rounded-xl transition-[height] duration-300", styles.meter.fill[it.tone ?? "primary"])}
+              style={{ height: `${Math.max(3, Math.min(100, it.pct))}%` }}
+            />
+          </div>
+          <span className="mt-2.5 text-center text-xs leading-snug text-fg-sub">{it.label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function ScaleLabels({ items }: { items: ReactNode[] }) {
   return (
     <div className="flex justify-between text-xs text-fg-muted">
@@ -126,7 +148,7 @@ export function TimelineItem({
             : "border-primary/50 bg-primary-soft/70",
       )}
     >
-      <Badge tone={badgeTone} className="h-9 w-15 shrink-0 rounded-lg px-0 text-sm">
+      <Badge tone={badgeTone} className="h-9 w-15 shrink-0 rounded-lg px-0! text-sm">
         {badge}
       </Badge>
       <span className="min-w-0 flex-1">

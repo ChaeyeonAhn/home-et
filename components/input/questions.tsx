@@ -35,7 +35,6 @@ export const QUESTIONS: Question[] = [
   {
     id: "school", group: "학교 · 집", label: "학교", kind: "choice",
     title: "어느 학교에 다니세요?",
-    sub: "학교 주변 원룸 시세를 불러올 때 써요.",
     display: (s) => findSchool(s.schoolId).name, valid: always,
   },
   {
@@ -47,7 +46,6 @@ export const QUESTIONS: Question[] = [
   {
     id: "route", group: "통학 경로", label: "경로", kind: "choice",
     title: "평소 이렇게\n통학하나요?",
-    sub: "Google 지도로 평일 오전 8시 출발 경로를 찾았어요. 고르면 다음 질문에 미리 채워 둘게요.",
     display: (s) => (s.routeKey ? s.routeSummary || "직접 입력" : "입력 전"),
     // 경로 후보 중 하나나 '직접 입력할게요'를 골라야 통과 (못 찾아도 '직접 입력' 선택지는 항상 있음).
     // 본가·학교를 바꾸면 routeKey가 초기화돼서 다시 골라야 검사 시작이 눌림
@@ -56,31 +54,27 @@ export const QUESTIONS: Question[] = [
   {
     id: "oneway", group: "통학 경로", label: "편도 시간", kind: "input",
     title: "본가에서 학교까지\n편도로 얼마나 걸려요?",
-    sub: "집을 나서서 강의실에 도착할 때까지요.",
     display: (s) => hm(s.commute.oneWayMin), valid: (s) => s.commute.oneWayMin > 0,
   },
   {
     id: "transfers", group: "통학 경로", label: "환승", kind: "input",
     title: "가는 길에 몇 번 갈아타요?",
-    sub: "환승이 많을수록 같은 1시간도 더 지치게 계산해요.",
     display: (s) => (s.commute.transfers === 0 ? "없음" : `${s.commute.transfers}번`), valid: always,
   },
   {
     id: "fare", group: "통학 경로", label: "왕복 교통비", kind: "input",
     title: "하루 왕복 교통비는\n얼마예요?",
-    sub: "갈 때와 올 때 찍히는 금액을 더해 주세요.",
     display: (s) => won(s.commute.roundTripFare), valid: always,
   },
   {
     id: "days", group: "생활 패턴", label: "주당 등교일", kind: "input",
     title: "일주일에 며칠\n학교에 가요?",
-    sub: "학회·동아리로 주말에도 나가면 그 날도 세어 주세요.",
     display: (s) => `주 ${s.commute.daysPerWeek}일`, valid: always,
   },
   {
     id: "goal", group: "가치관", label: "대학생활 목표", kind: "input",
     title: "대학생활에서\n얻고 싶은 걸 알려 주세요",
-    sub: "해당하는 걸 모두 골라 주세요. AI가 돈·시간·체력 중 무엇을 더 중요하게 여기는지 분석해요.",
+    sub: "해당하는 걸 모두 골라 주세요. 추가적인 목표는 직접 입력해주세요.",
     display: (s) => goalSummary(s), valid: (s) => goalText(s).length > 0,
   },
 ];

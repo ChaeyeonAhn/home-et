@@ -2,7 +2,7 @@
 
 /** 리포트 저장 UI: 리포트 화면의 저장 카드 + 시작 화면의 '기존 리포트 보기' + 목록 Dialog */
 import { useEffect, useState } from "react";
-import { Badge, Button, Card, CardTitle, Dialog, FinePrint } from "@/components/ui";
+import { Badge, Button, Card, CardTitle, Dialog } from "@/components/ui";
 import { cx, focusRing } from "@/components/ui/styles";
 import { MAX_REPORTS, type SavedReportMeta } from "@/lib/saved-reports";
 import { useReports } from "./reports-context";
@@ -64,7 +64,6 @@ export function SaveReportPanel() {
           )}
         </div>
       )}
-      <FinePrint className="mt-3">본가 주소와 대학생활 목표 글이 함께 저장돼요. 언제든 지울 수 있어요.</FinePrint>
     </Card>
   );
 }
