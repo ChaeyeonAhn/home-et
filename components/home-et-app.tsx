@@ -142,6 +142,8 @@ export function HomeEtApp() {
           "mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 md:py-12",
           // 남은 높이를 질문 화면에 넘겨서 화면 높이를 넘지 않게
           onInput && "max-md:flex max-md:flex-col max-md:p-0",
+          // 계약 D-day는 데스크톱에서 스크롤 없이 한 화면에 들어가게 위아래 여백을 줄임
+          state.step === 4 && "lg:pt-6 lg:pb-3",
         )}
       >
         {analyzing && <AnalyzingScreen state={state} name={name} />}
