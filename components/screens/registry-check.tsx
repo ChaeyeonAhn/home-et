@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { RegistryResult, Level } from "@/lib/registry-rules";
+import { REGISTRY_MAX_BYTES, REGISTRY_MAX_MB, type RegistryResult, type Level } from "@/lib/registry-rules";
 import { Badge, Button, Callout, Card, CardTitle, Chip, Field, FinePrint, NumberInput, SectionLabel, TextInput, TextLink, type BadgeTone } from "@/components/ui";
 
 const LEVEL: Record<Level, { label: string; tone: BadgeTone }> = {
@@ -129,8 +129,16 @@ export function RegistryCheck({ deposit }: { deposit: number }) {
             accept="application/pdf"
             className="block w-full text-sm text-fg-sub file:mr-3 file:rounded-control file:border-0 file:bg-primary-soft file:px-3 file:py-2 file:text-sm file:font-semibold file:text-primary"
             onChange={(e) => {
-              setFile(e.target.files?.[0] ?? null);
+              const f = e.target.files?.[0] ?? null;
               setResult(null);
+              // 서버에 보내기 전에 크기부터 확인 (한도를 넘으면 Vercel이 우리 안내 없이 거절함)
+              if (f && f.size > REGISTRY_MAX_BYTES) {
+                setFile(null);
+                e.target.value = "";
+                setError(`${REGISTRY_MAX_MB}MB 이하 PDF만 올릴 수 있어요. 인터넷등기소에서 받은 등본은 보통 1MB가 안 돼요.`);
+                return;
+              }
+              setFile(f);
               setError(null);
             }}
           />

@@ -4,6 +4,10 @@
  */
 import type { RegistryFacts, RiskKind } from "./registry";
 
+/** 올릴 수 있는 등본 PDF 크기. Vercel 함수 요청 본문 한도(4.5MB)보다 작게 (넘으면 우리 안내 대신 Vercel 오류가 뜸) */
+export const REGISTRY_MAX_MB = 4;
+export const REGISTRY_MAX_BYTES = REGISTRY_MAX_MB * 1024 * 1024;
+
 /** /api/registry 응답 (화면과 서버가 같이 씀) */
 export interface RegistryResult {
   /** text = PDF 글자 위치로 읽음, gemini = Gemini 문서 이해로 읽음, text+gemini = 둘 다 읽어 맞춰 봄 */

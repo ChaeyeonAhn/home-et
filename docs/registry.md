@@ -54,7 +54,7 @@ PDF ─▶ /api/registry (app/api/registry/route.ts)
 
 ## 3. API: `POST /api/registry`
 
-`multipart/form-data`: `file`(PDF, 10MB 이하), `deposit`(내 보증금), `price`(선택, 시세), `landlord`(선택, 계약 상대 이름)
+`multipart/form-data`: `file`(PDF, 4MB 이하: Vercel 요청 본문 한도 4.5MB), `deposit`(내 보증금), `price`(선택, 시세), `landlord`(선택, 계약 상대 이름)
 
 응답 `RegistryResult`: `source`("text" | "gemini"), `facts`(주소·소유자·권리·갑구 기록), `signals`, `laws`(신호에 붙은 조문 id → 이름·법제처 링크)
 

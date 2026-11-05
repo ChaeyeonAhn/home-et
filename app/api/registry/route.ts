@@ -15,13 +15,12 @@ import data from "@/data/law-chunks.json";
 import type { LawChunk } from "@/lib/law-search";
 import { parseRegistry, toFacts, type Entry, type RegistryFacts, type TextItem } from "@/lib/registry";
 import { generateWithFallback } from "@/lib/gemini";
-import { checkRegistry, compareFacts, type RegistryResult } from "@/lib/registry-rules";
+import { REGISTRY_MAX_BYTES, REGISTRY_MAX_MB, checkRegistry, compareFacts, type RegistryResult } from "@/lib/registry-rules";
 
 // Gemini 문서 이해(기본 모델 → 붐비면 예비 모델)가 기본 실행 시간 제한에 걸리지 않게.
 // cacheComponents라 runtime 설정은 쓰지 않음(기본 Node.js)
 export const maxDuration = 60;
 
-const MAX_BYTES = 10 * 1024 * 1024;
 const GEMINI_TIMEOUTS = [25_000, 32_000]; // 기본 모델, 예비 모델 (합이 maxDuration 안)
 
 const lawById = new Map((data.chunks as LawChunk[]).map((c) => [c.id, c]));
@@ -133,7 +132,7 @@ export async function POST(req: Request) {
   }
   const file = form.get("file");
   if (!(file instanceof File)) return Response.json({ error: "등기부등본 PDF를 올려 주세요." }, { status: 400 });
-  if (file.size > MAX_BYTES) return Response.json({ error: "10MB 이하 파일만 올릴 수 있어요." }, { status: 413 });
+  if (file.size > REGISTRY_MAX_BYTES) return Response.json({ error: `${REGISTRY_MAX_MB}MB 이하 파일만 올릴 수 있어요.` }, { status: 413 });
   const bytes = new Uint8Array(await file.arrayBuffer());
   if (new TextDecoder().decode(bytes.slice(0, 5)) !== "%PDF-") return Response.json({ error: "PDF 파일만 올릴 수 있어요." }, { status: 415 });
 
