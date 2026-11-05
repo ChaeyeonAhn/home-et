@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { RegistryResult, Level } from "@/lib/registry-rules";
-import { Badge, Button, Callout, Card, CardTitle, Field, FinePrint, NumberInput, SectionLabel, TextInput, TextLink, type BadgeTone } from "@/components/ui";
+import { Badge, Button, Callout, Card, CardTitle, Chip, Field, FinePrint, NumberInput, SectionLabel, TextInput, TextLink, type BadgeTone } from "@/components/ui";
 
 const LEVEL: Record<Level, { label: string; tone: BadgeTone }> = {
   high: { label: "위험", tone: "solidAccent" },
@@ -19,6 +19,29 @@ const SOURCE_NOTE: Record<RegistryResult["source"], (diff: string[] | null) => s
   gemini: () => "Gemini 문서 이해로 읽은 결과예요. ",
 };
 
+// ── 화면 표시용 가리기 (발표·화면 공유용). 판단은 서버에서 원래 값으로 함 ─────────────
+/** 은행·회사 같은 기관 이름은 가리지 않음 */
+const ORG = /은행|주식회사|\(주\)|조합|공사|공단|회사|캐피탈|금고|보험|카드|협회|법인|신탁|중앙회/;
+const maskName = (n: string) => (n.length <= 1 ? n : n[0] + "○".repeat(n.length - 1));
+/** 동·읍·면까지만 보여 줌: "서울특별시 서초구 방배동 725외 …" → "서울특별시 서초구 방배동 ○○○" */
+function maskAddress(a: string) {
+  const parts = a.split(/\s+/);
+  const i = parts.findIndex((t) => /(동|읍|면|가)$/.test(t) && !/^\d/.test(t));
+  return i >= 0 ? `${parts.slice(0, i + 1).join(" ")} ○○○` : "주소 가림";
+}
+/** 결과 안의 사람 이름(소유자·권리자)을 모아 글 속에서 모두 가림 */
+function nameMasker(r: RegistryResult) {
+  const names = [
+    ...r.facts.owners.map((o) => o.name),
+    ...r.facts.rights.map((x) => x.holder ?? ""),
+    ...r.facts.flags.map((x) => x.holder ?? ""),
+  ]
+    .map((n) => n.trim())
+    .filter((n) => n && !ORG.test(n) && /^[가-힣]{2,5}$/.test(n))
+    .sort((a, b) => b.length - a.length);
+  return (text: string) => names.reduce((t, n) => t.split(n).join(maskName(n)), text);
+}
+
 const man = (won: number) => `${Math.round(won / 10_000).toLocaleString("ko-KR")}만 원`;
 
 /**
@@ -34,6 +57,7 @@ export function RegistryCheck({ deposit }: { deposit: number }) {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [verify, setVerify] = useState<"idle" | "running" | "failed">("idle");
+  const [masked, setMasked] = useState(true); // 화면 공유·발표 때 이름·주소가 보이지 않게 기본으로 가림
   const runId = useRef(0); // 새로 검사하면 이전 교차 검증 결과는 버림
 
   const send = (mode: "text" | "verify") => {
@@ -86,6 +110,7 @@ export function RegistryCheck({ deposit }: { deposit: number }) {
     ? (["high", "caution"] as const).map((l) => ({ l, n: result.signals.filter((s) => s.level === l).length })).filter((c) => c.n)
     : [];
   const live = result?.facts.rights.filter((r) => !r.cancelled) ?? [];
+  const hide = result && masked ? nameMasker(result) : (t: string) => t;
   const liveFlags = result?.facts.flags.filter((f) => !f.cancelled) ?? [];
 
   return (
@@ -133,13 +158,18 @@ export function RegistryCheck({ deposit }: { deposit: number }) {
       {result && (
         <div className="mt-5 space-y-5" aria-live="polite">
           <div className="rounded-panel bg-surface-muted p-4 text-sm">
-            <p className="font-bold">
-              {result.facts.propertyType && `[${result.facts.propertyType}] `}
-              {result.facts.address}
-            </p>
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <p className="font-bold">
+                {result.facts.propertyType && `[${result.facts.propertyType}] `}
+                {masked ? maskAddress(result.facts.address) : result.facts.address}
+              </p>
+              <Chip selected={masked} onClick={() => setMasked((m) => !m)}>
+                {masked ? "✓ 이름·주소 가리는 중" : "이름·주소 가리기"}
+              </Chip>
+            </div>
             <p className="mt-1 text-fg-sub">
               열람일 {result.facts.viewedAt ?? "확인 불가"} · 소유자{" "}
-              {result.facts.owners.map((o) => `${o.name}${o.share === "1" ? "" : `(${o.share})`}`).join(", ") || "확인 불가"}
+              {result.facts.owners.map((o) => `${hide(o.name)}${o.share === "1" ? "" : `(${o.share})`}`).join(", ") || "확인 불가"}
             </p>
             <p className="mt-1 text-fg-sub">
               {counts.length ? counts.map((c) => `${LEVEL[c.l].label} ${c.n}건`).join(" · ") : "위험·주의 신호 없음"}
@@ -156,8 +186,8 @@ export function RegistryCheck({ deposit }: { deposit: number }) {
                     {LEVEL[s.level].label}
                   </Badge>
                   <div className="min-w-0">
-                    <p className="font-bold">{s.title}</p>
-                    <p className="mt-1 text-sm leading-relaxed text-fg-sub">{s.detail}</p>
+                    <p className="font-bold">{hide(s.title)}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-fg-sub">{hide(s.detail)}</p>
                     {s.laws.some((id) => result.laws[id]) && (
                       <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
                         {s.laws
@@ -191,7 +221,7 @@ export function RegistryCheck({ deposit }: { deposit: number }) {
                   <li key={`을${r.rank}`} className="flex justify-between gap-3 px-4 py-2.5">
                     <span>
                       을구 {r.rank}번 · {r.kind}
-                      {r.holder ? ` · ${r.holder}` : ""}
+                      {r.holder ? ` · ${hide(r.holder)}` : ""}
                     </span>
                     <span className="shrink-0 tabular-nums text-fg-sub">{r.amount ? man(r.amount) : r.date}</span>
                   </li>
