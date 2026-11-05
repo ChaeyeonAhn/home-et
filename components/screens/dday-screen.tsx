@@ -145,15 +145,15 @@ export function DdayScreen({
   return (
     <div>
       {/* 데스크톱은 한 화면에 들어가게 제목 영역을 조금 작게 */}
-      <div className="mb-6 lg:mb-4">
+      <div className="mb-7">
         <h1 className="text-2xl font-bold tracking-tight sm:text-[28px] lg:text-2xl">첫 계약, 언제 무엇을 하면 될까?</h1>
-        <p className="mt-2 text-[15px] text-fg-sub lg:mt-1">날짜만 넣으면 단계별 D-day를 알려 드리고, 그때 꼭 알아야 할 용어를 쉽게 풀어 드려요.</p>
+        <p className="mt-2 text-[15px] text-fg-sub">날짜만 넣으면 단계별 D-day를 알려 드리고, 그때 꼭 알아야 할 용어를 쉽게 풀어 드려요.</p>
       </div>
 
-      {/* 데스크톱(lg): 왼쪽 계약 정보 + 캘린더 버튼 | 오른쪽 가로 타임라인 → 단계 설명 → 용어 → 등본·특약 카드. 그보다 좁으면: 계약 정보 → 세로 타임라인
-          왼쪽 카드는 오른쪽 열 높이로 늘리지 않고 내용만큼만, 스크롤하면 헤더 아래에 따라옴 (오른쪽이 길어도 빈 기둥이 생기지 않게) */}
-      <div className="grid gap-5 lg:grid-cols-[340px_minmax(0,1fr)] lg:items-start">
-        <Card padding="sm" className="flex flex-col lg:sticky lg:top-[calc(var(--header-h,0px)+1rem)]">
+      {/* 데스크톱(lg): 왼쪽 계약 정보 + 캘린더 버튼 | 오른쪽 가로 타임라인 → 단계 설명·용어. 그보다 좁으면: 계약 정보 → 세로 타임라인
+          왼쪽 카드는 오른쪽 열과 아래 끝을 맞추고(stretch), 캘린더·돌아가기 버튼은 카드 맨 아래에 (등본·특약은 도우미로 빠져 오른쪽이 짧음) */}
+      <div className="grid gap-5 lg:grid-cols-[340px_minmax(0,1fr)] lg:items-stretch">
+        <Card padding="sm" className="flex flex-col">
           <CardTitle>내 계약 정보</CardTitle>
           {/* 2×2: 계약일 | 잔금·입주일 / 보증금 | 월세 (데스크톱도 2×2: 한 화면에 들어가게) */}
           <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-3">

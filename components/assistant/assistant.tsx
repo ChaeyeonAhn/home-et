@@ -124,8 +124,8 @@ export function Assistant({ deposit }: { deposit: number }) {
         aria-controls="home-et-assistant"
         onClick={() => (open ? close() : setOpen(true))}
         className={cx(
-          "fixed right-4 z-40 grid h-14 w-14 place-items-center rounded-full bg-primary text-on-primary shadow-[0_10px_28px_rgb(27_42_74/0.28)] transition hover:bg-primary-hover active:scale-95",
-          "bottom-[calc(5.25rem+env(safe-area-inset-bottom))] md:bottom-6 md:right-6",
+          "fixed right-4 z-40 grid h-16 w-16 place-items-center rounded-full bg-primary text-on-primary shadow-[0_10px_28px_rgb(27_42_74/0.28)] transition hover:bg-primary-hover active:scale-95",
+          "bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-6 md:right-6",
           open && "max-md:hidden",
           focusRing,
         )}
@@ -143,7 +143,7 @@ export function Assistant({ deposit }: { deposit: number }) {
             "fixed z-50 flex flex-col overflow-hidden border border-glass-border bg-surface shadow-[0_18px_48px_rgb(27_42_74/0.22)] motion-safe:animate-rise",
             // 모바일: 아래에서 올라오는 시트 / 데스크톱: 버튼 위에 떠 있는 창
             "inset-x-0 bottom-0 h-[88dvh] rounded-t-card",
-            "md:inset-x-auto md:bottom-24 md:right-6 md:h-[min(640px,calc(100dvh-8rem))] md:w-[400px] md:rounded-card",
+            "md:inset-x-auto md:bottom-28 md:right-6 md:h-[min(640px,calc(100dvh-9rem))] md:w-[400px] md:rounded-card",
           )}
         >
           {/* 머리 */}
@@ -340,7 +340,7 @@ function IconButton({ label, onClick, children }: { label: string; onClick: () =
 
 function ChatIcon() {
   return (
-    <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden>
+    <svg width="30" height="30" viewBox="0 0 26 26" fill="none" aria-hidden>
       <path d="M5 6.5A2.5 2.5 0 0 1 7.5 4h11A2.5 2.5 0 0 1 21 6.5v8a2.5 2.5 0 0 1-2.5 2.5H11l-4.5 4v-4h0A1.5 1.5 0 0 1 5 15.5v-9Z" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
       <path d="M9.5 10.5h.01M13 10.5h.01M16.5 10.5h.01" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" />
     </svg>
