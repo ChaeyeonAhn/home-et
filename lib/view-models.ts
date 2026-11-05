@@ -89,8 +89,6 @@ export function reportModel(state: AppState, name: string | null) {
     })),
     aiAdj,
     isAiValue: !!aiAdj && sameAdjust(aiAdj, state.adj),
-    // AI(Gemini) 분석일 때만 근거를 보여 줌. 키워드 대체 분석·기본값은 숨김
-    reason: state.analysis?.source === "gemini" ? `AI 분석 근거: ${state.analysis.reason}` : null,
     stayMessage: `등교일이나 시간표가 바뀌면 다시 계산해 보세요. 마음이 바뀌면 언제든 “${nextLabel}”로 넘어갈 수 있어요.`,
   };
 }
