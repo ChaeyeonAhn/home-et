@@ -49,7 +49,7 @@ npm run build:law     # → data/law-chunks.json 갱신 후 커밋
 
 ```bash
 # .env.local
-GEMINI_API_KEY=<키>
+GEMINI_FILE_SEARCH_API_KEY=<저장소를 둘 프로젝트의 키>   # 없으면 GEMINI_API_KEY로 만들어요
 
 npm run build:file-search      # 끝에 출력되는 줄을 .env.local에 추가
 # GEMINI_FILE_SEARCH_STORE=fileSearchStores/...
@@ -57,7 +57,7 @@ npm run build:file-search      # 끝에 출력되는 줄을 .env.local에 추가
 
 - `scripts/build-file-search.mts`가 `data/law-chunks.json`의 조문을 **조문 1개 = 문서 1개**로 올려요. 문서 이름은 `주택임대차보호법 제10조(강행규정)` 형식이고, `customMetadata`에 조문 id(`주택임대차보호법:제10조`)를 넣어요.
 - 이미 `GEMINI_FILE_SEARCH_STORE`가 있으면 그 저장소를 지우고 새로 만들어요.
-- 저장소는 **API 키의 프로젝트에 속해요.** 다른 키(예: 배포용 키)를 쓰면 그 키로 스크립트를 다시 돌리고, 배포 환경 변수에도 `GEMINI_FILE_SEARCH_STORE`를 넣어야 해요.
+- 저장소는 **API 키의 프로젝트에 속해요.** 그래서 `/api/ask`는 File Search를 부를 때만 전용 키 `GEMINI_FILE_SEARCH_API_KEY`를 쓰고, 대체 경로(BM25 + Gemini)와 다른 기능은 `GEMINI_API_KEY`를 써요. 배포 환경 변수에 `GEMINI_FILE_SEARCH_STORE`와 `GEMINI_FILE_SEARCH_API_KEY`를 함께 넣어 주세요. 전용 키가 없으면 `GEMINI_API_KEY` 하나로 둘 다 해요.
 - 비용: 올릴 때 임베딩 비용만 들고(조문 123개라 아주 적음), 저장과 질문 임베딩은 무료예요.
 
 **답변의 근거**: 응답의 `groundingMetadata.groundingChunks[].retrievedContext`에서 `customMetadata.id`(없으면 문서 이름)로 우리 조문을 찾아요. 모르는 조각은 버리고, **근거가 하나도 없으면 답을 쓰지 않고** ②로 넘어가요(지어낸 답 방지).

@@ -1,13 +1,13 @@
 /**
  * 법령 조문을 Gemini API File Search 저장소에 올리기 (Google 관리형 RAG)
  *
- *   npm run build:file-search             (.env.local의 GEMINI_API_KEY 필요)
+ *   npm run build:file-search             (.env.local의 GEMINI_FILE_SEARCH_API_KEY, 없으면 GEMINI_API_KEY)
  *   npm run build:file-search -- --fresh  (저장소를 지우고 새로 만들기)
  *
  * data/law-chunks.json의 조문을 하나씩 문서로 올려요(조문 1개 = 문서 1개).
  * 자르기·임베딩·색인은 File Search가 하고, 답변의 근거(grounding)가 조문 단위로 돌아와요.
  * 끝나면 출력되는 저장소 이름을 .env.local의 GEMINI_FILE_SEARCH_STORE에 넣으세요.
- * 저장소는 API 키의 프로젝트에 속해서, 다른 키를 쓰면 이 스크립트를 다시 돌려야 해요.
+ * 저장소는 API 키의 프로젝트에 속해서, 배포에도 같은 키를 GEMINI_FILE_SEARCH_API_KEY로 넣어야 해요.
  *
  * GEMINI_FILE_SEARCH_STORE가 있으면 그 저장소에 빠진 조문만 이어서 올려요(중간에 끊겨도 다시 돌리면 됨).
  * 조문 데이터가 바뀌었으면 --fresh: 그 저장소를 지우고 새로 만들어요.
@@ -23,9 +23,10 @@ interface LawChunk {
   text: string;
 }
 
-const apiKey = process.env.GEMINI_API_KEY;
+// 저장소는 이 키의 프로젝트에 만들어짐 → 배포의 /api/ask도 같은 키(GEMINI_FILE_SEARCH_API_KEY)로 호출해야 함
+const apiKey = process.env.GEMINI_FILE_SEARCH_API_KEY || process.env.GEMINI_API_KEY;
 if (!apiKey) {
-  console.error(".env.local에 GEMINI_API_KEY가 없어요");
+  console.error(".env.local에 GEMINI_FILE_SEARCH_API_KEY(또는 GEMINI_API_KEY)가 없어요");
   process.exit(1);
 }
 

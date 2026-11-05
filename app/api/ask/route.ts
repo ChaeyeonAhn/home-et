@@ -1,8 +1,9 @@
 // 계약서·특약 질문 → 관련 조문 검색 → Gemini가 그 조문만 근거로 설명 (docs/law-rag.md)
 //
-// ① Gemini API File Search (Google 관리형 RAG): GEMINI_API_KEY + GEMINI_FILE_SEARCH_STORE가 있을 때.
+// ① Gemini API File Search (Google 관리형 RAG): GEMINI_FILE_SEARCH_STORE가 있을 때.
+//    저장소는 만든 키의 프로젝트에 묶여서, 전용 키 GEMINI_FILE_SEARCH_API_KEY로 호출 (없으면 GEMINI_API_KEY)
 //    Gemini가 저장소에서 조문을 직접 찾고, 근거는 응답의 grounding 정보로 받음
-// ② 대체: 직접 만든 BM25로 찾고 Gemini가 설명 (저장소가 없거나 ①이 실패할 때)
+// ② 대체: 직접 만든 BM25로 찾고 Gemini가 설명 (저장소가 없거나 ①이 실패할 때). 기본 키 GEMINI_API_KEY로 호출
 // ③ 키가 없으면 BM25로 찾은 조문만 돌려줌
 import { GoogleGenAI, type GenerateContentResponse } from "@google/genai";
 import { z } from "zod";
@@ -124,13 +125,15 @@ export async function POST(req: Request) {
   const hits = search(index, question, TOP_K).map((h) => h.chunk);
   const searchOnly: AskResult = { answer: null, sources: hits.map((c) => toSource(c, false)), source: "search" };
 
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return Response.json(searchOnly);
+  // File Search는 저장소를 만든 프로젝트의 키로, 대체 경로는 기본 키로 (한도도 나뉨). 하나만 있으면 그 키로 둘 다
+  const apiKey = process.env.GEMINI_API_KEY || process.env.GEMINI_FILE_SEARCH_API_KEY;
+  const fileSearchKey = process.env.GEMINI_FILE_SEARCH_API_KEY || process.env.GEMINI_API_KEY;
+  if (!apiKey || !fileSearchKey) return Response.json(searchOnly);
   const ai = new GoogleGenAI({ apiKey });
 
   if (STORE) {
     try {
-      return Response.json(await askFileSearch(ai, question));
+      return Response.json(await askFileSearch(new GoogleGenAI({ apiKey: fileSearchKey }), question));
     } catch (err) {
       // 근거를 못 찾는 질문은 정상적인 대체 경로라 스택 없이 한 줄만
       console.warn(`[ask] File Search → BM25로 대체: ${err instanceof Error ? err.message : err}`);
