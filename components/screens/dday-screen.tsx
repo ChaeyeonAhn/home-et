@@ -4,6 +4,8 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import type { AppState } from "@/lib/app-state";
 import { WRONG_ACCOUNT, buildIcs, calendarEvents, type Step } from "@/lib/dday";
 import { ddayModel, type DdayItem } from "@/lib/view-models";
+import { LawAsk } from "./law-ask";
+import { RegistryCheck } from "./registry-check";
 import { useAuth } from "@/components/providers";
 import {
   ActionBar, Badge, Button, ButtonAnchor, Callout, Card, CardTitle, Dialog, Eyebrow, Field, FinePrint, LinkButton, NumberInput,
@@ -261,6 +263,10 @@ export function DdayScreen({
               <Terms terms={sel.terms} className="hidden lg:block" cards />
             </>
           )}
+
+          {/* 등기부등본 위험 신호 + 계약서·특약 질문(법령 RAG) */}
+          <RegistryCheck deposit={state.leaseDeposit} />
+          <LawAsk />
 
           {/* 로그인 안 했으면: 로그인하면 캘린더에 바로 넣을 수 있다고 안내 (로그인하고 돌아오면 등록 버튼으로 바뀜) */}
           {gcal.needsLogin && (
