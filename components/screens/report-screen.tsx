@@ -6,7 +6,7 @@ import type { LivingCosts } from "@/lib/calc";
 import { reportModel } from "@/lib/view-models";
 import { cx } from "@/components/ui/styles";
 import {
-  ActionBar, Badge, BigNumber, Button, Callout, Card, CardTitle, Dialog, Em, ColumnBars, Field, FinePrint, InfoTip,
+  ActionBar, Badge, BigNumber, Button, Card, CardTitle, Dialog, Em, ColumnBars, Field, FinePrint, InfoTip,
   Meter, NumberInput, ScaleLabels, SectionLabel, Slider, StatList, useIsDesktop,
 } from "@/components/ui";
 import { SaveReportPanel } from "@/components/reports/report-ui";
