@@ -148,9 +148,10 @@ export function DdayScreen({
     <div>
       <PageHeader title="첫 계약, 언제 무엇을 하면 될까?" sub="날짜만 넣으면 단계별 D-day를 알려 드리고, 그때 꼭 알아야 할 용어를 쉽게 풀어 드려요." />
 
-      {/* 데스크톱(lg): 왼쪽 계약 정보 + 캘린더 버튼 | 오른쪽 가로 타임라인 → 단계 설명 → 용어. 그보다 좁으면: 계약 정보 → 세로 타임라인 */}
-      <div className="grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-stretch">
-        <Card className="flex flex-col">
+      {/* 데스크톱(lg): 왼쪽 계약 정보 + 캘린더 버튼 | 오른쪽 가로 타임라인 → 단계 설명 → 용어 → 등본·특약 카드. 그보다 좁으면: 계약 정보 → 세로 타임라인
+          왼쪽 카드는 오른쪽 열 높이로 늘리지 않고 내용만큼만, 스크롤하면 헤더 아래에 따라옴 (오른쪽이 길어도 빈 기둥이 생기지 않게) */}
+      <div className="grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
+        <Card className="flex flex-col lg:sticky lg:top-[calc(var(--header-h,0px)+1rem)]">
           <CardTitle>내 계약 정보</CardTitle>
           {/* 2×2: 계약일 | 잔금·입주일 / 보증금 | 월세, 데스크톱: 한 줄에 하나씩 */}
           <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-4 lg:grid-cols-1">
