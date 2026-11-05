@@ -125,6 +125,31 @@ export function googleCalendarUrl(step: Step) {
   return `https://calendar.google.com/calendar/render?${p.toString()}`;
 }
 
+/** 계약 D-day를 내 Google 캘린더에 바로 넣는 권한. 로그인할 땐 받지 않고, 등록 버튼을 누를 때 따로 요청해요 */
+export const CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar.events";
+/** 캘린더 권한을 받는 중에 로그인한 계정과 다른 Google 계정을 고르면, 이 표시(?gcal=…)와 함께 돌려보냄 */
+export const WRONG_ACCOUNT = "wrong-account";
+
+/** Google 캘린더 API(/api/calendar)로 보낼 종일 일정. end는 다음 날(배타적) */
+export interface CalendarEvent {
+  key: string;
+  summary: string;
+  description: string;
+  start: string; // YYYY-MM-DD
+  end: string; // YYYY-MM-DD, 마지막 날 + 1
+}
+
+export const STEP_KEYS = ["pre", "contract", "before-balance", "balance", "report"] as const;
+
+export const calendarEvents = (steps: Step[]): CalendarEvent[] =>
+  steps.map((s) => ({
+    key: s.key,
+    summary: `[HOME:ET] ${s.title}`,
+    description: `${s.todo}\n\n알아둘 용어: ${s.terms.join(", ")}`,
+    start: toInput(s.start),
+    end: toInput(addDays(s.end, 1)),
+  }));
+
 const icsEscape = (s: string) => s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/[,;]/g, (m) => `\\${m}`);
 
 export function buildIcs(steps: Step[]) {
