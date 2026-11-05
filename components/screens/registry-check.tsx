@@ -2,7 +2,8 @@
 
 import { useRef, useState } from "react";
 import { REGISTRY_MAX_BYTES, REGISTRY_MAX_MB, type RegistryResult, type Level } from "@/lib/registry-rules";
-import { Badge, Button, Callout, Card, CardTitle, Chip, Field, FinePrint, NumberInput, SectionLabel, TextInput, TextLink, type BadgeTone } from "@/components/ui";
+import { ToolShell } from "./tool-shell";
+import { Badge, Button, Callout, Chip, Field, FinePrint, NumberInput, SectionLabel, TextInput, TextLink, type BadgeTone } from "@/components/ui";
 
 const LEVEL: Record<Level, { label: string; tone: BadgeTone }> = {
   high: { label: "위험", tone: "solidAccent" },
@@ -48,7 +49,7 @@ const man = (won: number) => `${Math.round(won / 10_000).toLocaleString("ko-KR")
  * 등기부등본 PDF → 위험 신호 (/api/registry, docs/registry.md)
  * 파일은 서버에서 읽고 바로 버림. 집주인 이름·시세도 이 화면에만 두고 저장하지 않음
  */
-export function RegistryCheck({ deposit }: { deposit: number }) {
+export function RegistryCheck({ deposit, bare }: { deposit: number; bare?: boolean }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [landlord, setLandlord] = useState("");
@@ -114,8 +115,7 @@ export function RegistryCheck({ deposit }: { deposit: number }) {
   const liveFlags = result?.facts.flags.filter((f) => !f.cancelled) ?? [];
 
   return (
-    <Card>
-      <CardTitle meta="계약 전 · 잔금 전날">등기부등본 확인하기</CardTitle>
+    <ToolShell bare={bare} title="등기부등본 확인하기" meta="계약 전 · 잔금 전날">
       <p className="mt-2 text-sm text-fg-sub">
         인터넷등기소에서 열람한 등기사항전부증명서 PDF를 올리면 소유자, 근저당, 압류 같은 위험 신호를 찾아 드려요.
       </p>
@@ -266,6 +266,6 @@ export function RegistryCheck({ deposit }: { deposit: number }) {
           </Button>
         </div>
       )}
-    </Card>
+    </ToolShell>
   );
 }

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import type { AskResult, AskSource } from "@/lib/law-search";
-import { Button, Callout, Card, CardTitle, FinePrint, QuickChips, SectionLabel, TextArea, TextLink } from "@/components/ui";
+import { ToolShell } from "./tool-shell";
+import { Button, Callout, FinePrint, QuickChips, SectionLabel, TextArea, TextLink } from "@/components/ui";
 
 /** 예시 질문: 칩에는 짧은 이름, 누르면 전체 질문을 보냄 (근거 조문이 확실히 나오는 질문으로 고름) */
 const EXAMPLES = [
@@ -19,7 +20,7 @@ const SOURCE_NOTE: Record<AskResult["source"], string> = {
 };
 
 /** 계약서·특약 질문 → 관련 법 조문 + 쉬운 설명 (/api/ask, docs/law-rag.md) */
-export function LawAsk() {
+export function LawAsk({ bare }: { bare?: boolean } = {}) {
   const [question, setQuestion] = useState("");
   const [result, setResult] = useState<AskResult | null>(null);
   const [loading, setLoading] = useState(false);
@@ -48,8 +49,7 @@ export function LawAsk() {
   };
 
   return (
-    <Card>
-      <CardTitle meta="관련 법 조문으로 설명해요">계약서·특약 물어보기</CardTitle>
+    <ToolShell bare={bare} title="계약서·특약 물어보기" meta="관련 법 조문으로 설명해요">
       <div className="mt-4 space-y-3">
         <TextArea
           aria-label="계약서·특약 질문"
@@ -102,7 +102,7 @@ export function LawAsk() {
       <FinePrint className="mt-4">
         법제처 국가법령정보의 현행 조문을 바탕으로 한 일반 정보이며 법률 자문이 아니에요. 실제 계약에서는 계약서 원문과 공인중개사 설명을 함께 확인하세요.
       </FinePrint>
-    </Card>
+    </ToolShell>
   );
 }
 
