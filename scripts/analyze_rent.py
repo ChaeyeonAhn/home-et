@@ -14,6 +14,7 @@
       data/analysis/04-type-mix.png         학교별 단독/다가구·연립/다세대 비중과 시세
       data/analysis/05-school-result.png    학교별 가까운 동 환산 월세
       data/analysis/summary.csv             학교별 가까운 동 시세 표
+      data/school-dongs.json                앱(lib/data.ts)이 쓰는 학교별 주변 동 시세·좌표
 
 실행  python scripts/analyze_rent.py
 """
@@ -130,9 +131,16 @@ for school, spos in SCHOOLS.items():
     for _, r in c.nsmallest(TOP, "km").iterrows():
         near_rows.append({"school": school, "gu": r.gu, "dong": r.dongBase, "km": round(r.km, 2), "count": int(r["count"]),
                           "rh_share": round(r.rh_share * 100), "p25": round(r.p25, 1), "median": round(r["median"], 1),
-                          "p75": round(r.p75, 1), "rent_median": r.rent_median, "deposit_median": r.deposit_median})
+                          "p75": round(r.p75, 1), "rent_median": r.rent_median, "deposit_median": r.deposit_median,
+                          "lat": round(r.pos[0], 5), "lng": round(r.pos[1], 5)})
 near = pd.DataFrame(near_rows)
-near.to_csv(OUT / "summary.csv", index=False, encoding="utf-8-sig")
+near.drop(columns=["lat", "lng"]).to_csv(OUT / "summary.csv", index=False, encoding="utf-8-sig")
+# 앱(lib/data.ts)이 읽는 학교별 주변 동 시세: 학교 이름 → 가까운 순 동 목록 (금액 단위: 만 원)
+app_rows = {s: [{k: (v.item() if hasattr(v, "item") else v) for k, v in row.items() if k != "school"}
+                for row in near_rows if row["school"] == s] for s in SCHOOLS}
+Path("data/school-dongs.json").write_text(
+    json.dumps({"period": period, "filter": F, "minCount": MIN_COUNT, "schools": app_rows}, ensure_ascii=False, indent=1),
+    encoding="utf-8")
 near_keys = {(r.gu, r.dong) for r in near.itertuples()}
 dn = df[[(a, b) in near_keys for a, b in zip(df.gu, df.dongBase)]]  # 학교 근처 동 거래 (확정 기준)
 
@@ -300,4 +308,4 @@ print(f"기간 {period} · 서울 {total:,}건 → 확정 기준 통과 {funnel[
 for name, c in funnel:
     print(f"  {name:<22} {c:>8,}건")
 print(f"학교 근처 동 {len(near_keys)}곳 · 거래 {len(dn):,}건 · 월세 중앙값 {dn['rent'].median():g} → 환산 {dn['conv'].median():.1f}")
-print("저장: data/analysis/01~05 *.png, summary.csv")
+print("저장: data/analysis/01~05 *.png, summary.csv, data/school-dongs.json")

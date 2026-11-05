@@ -144,6 +144,6 @@ console.log(`후보 동 ${dongPos.size}개 · 실거래가 호출 ${rentCalls}�
 console.log(`결과: data/nearest-dongs-${dealYmd}.json\n`);
 for (const [school, rows] of Object.entries(out)) {
   console.log(`■ ${school}`);
-  for (const r of rows as any[])
+  for (const r of rows as { km: number; gu: string; dong: string; monthlyDeals: number; rentMedian: number; depositMedian: number; areaMedian: number; legalDongs: string[] }[])
     console.log(`  ${String(r.km).padStart(5)}km  ${(r.gu + " " + r.dong).padEnd(14)} 월세 ${String(r.monthlyDeals).padStart(3)}건  중앙값 ${String(r.rentMedian).padStart(4)}  보증금 ${r.depositMedian}  면적 ${r.areaMedian}  [${r.legalDongs.join(",")}]`);
 }

@@ -143,7 +143,6 @@ export function rentModel(state: AppState, name: string | null) {
   const DEPOSIT_STEP = 10_000_000;
   const more = compute(state.commute, { ...costs, deposit: costs.deposit + DEPOSIT_STEP }, state.adj, livingMin, regionFare(region));
   const ratePct = Math.round(costs.annualRate * 1000) / 10;
-  const example = isCustom ? undefined : "(예시 데이터)";
 
   return {
     school,
@@ -164,9 +163,9 @@ export function rentModel(state: AppState, name: string | null) {
       { label: "월세 상한", value: cap, total: true },
     ] satisfies Line[],
     stats: [
-      { label: "학교까지", value: `${region.mode === "도보" ? "도보" : isCustom ? "대중교통" : region.mode} ${region.oneWayMin}분` },
-      { label: "원룸 월세 중앙값", value: man(region.rentMedian, 0), note: example },
-      { label: "관리비 중앙값", value: man(region.mgmtMedian, 0), note: example },
+      { label: "학교까지", value: `${region.mode === "도보" ? "도보" : isCustom ? "대중교통" : region.mode} ${region.oneWayMin}분`, note: isCustom ? undefined : region.mode === "도보" ? "(거리로 어림)" : "(Google 경로)" },
+      { label: "원룸 월세 중앙값", value: man(region.rentMedian, 0), note: isCustom ? undefined : "(실거래가 1년)" },
+      { label: "관리비 중앙값", value: man(region.mgmtMedian, 0), note: isCustom ? undefined : "(가정)" },
     ],
     depositNote:
       finite && r.rentCap > 0

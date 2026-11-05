@@ -1,5 +1,10 @@
-// 데모용 학교·지역 데이터.
-// 월세·관리비 중앙값은 국토부 전월세 실거래가 가공 전 "예시 데이터"입니다.
+// 학교·주변 동 데이터.
+// 주변 동 = 학교에서 가까운 법정동 5곳(1년 거래 100건 이상). 월세는 국토부 전월세 실거래가 1년치 중앙값
+// (단독/다가구·연립/다세대, 보증금 5,000만·월세 100만 이하, 14~40㎡, 반지하 제외).
+// 학교까지 시간은 Google Routes API 대중교통(평일 오전 8시)과 도보 어림 중 빠른 쪽 (scripts/school-commute.mts 캐시).
+// data/school-dongs.json 은 scripts/analyze_rent.py 가 만듦. 관리비는 실거래가에 없어서 가정값.
+import schoolCommute from "@/data/school-commute.json";
+import schoolDongs from "@/data/school-dongs.json";
 
 export type Mode = "도보" | "버스" | "지하철";
 
@@ -23,70 +28,36 @@ export interface School {
   regions: Region[];
 }
 
-const r = (
-  id: string, name: string, mode: Mode, oneWayMin: number,
-  rentMan: number, mgmtMan: number, lat: number, lng: number,
-): Region => ({ id, name, mode, oneWayMin, rentMedian: rentMan * 10_000, mgmtMedian: mgmtMan * 10_000, lat, lng });
+/** 실거래가에 관리비가 없어서 모든 동에 같은 가정값 */
+const MGMT_EXAMPLE = 60_000;
 
-/** 두 좌표 사이 직선거리 비교용 값(km²에 비례). 짧은 거리라 위도 보정만 한 평면 근사로 충분 */
-const dist2 = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
-  const dLat = a.lat - b.lat;
-  const dLng = (a.lng - b.lng) * Math.cos((a.lat * Math.PI) / 180);
-  return dLat * dLat + dLng * dLng;
+/** 캐시에 없으면(분석을 다시 돌리고 school-commute.mts 를 안 돌린 경우) 바로 알 수 있게 에러 */
+const commuteOf = (school: keyof typeof schoolDongs.schools, dong: string): Pick<Region, "mode" | "oneWayMin"> => {
+  const c = (schoolCommute as Record<string, Record<string, { mode: string; oneWayMin: number }>>)[school]?.[dong];
+  if (!c) throw new Error(`data/school-commute.json에 ${school} ${dong}이 없어요. scripts/school-commute.mts를 실행하세요.`);
+  return { mode: c.mode as Mode, oneWayMin: c.oneWayMin };
 };
 
-/** 동 목록은 학교에서 가까운 순. 첫 번째 동이 기본 선택이 됨 */
-const byDistance = (s: School): School => ({ ...s, regions: [...s.regions].sort((a, b) => dist2(a, s) - dist2(b, s)) });
+type DongRow = (typeof schoolDongs.schools)[keyof typeof schoolDongs.schools][number];
+const regionsOf = (school: keyof typeof schoolDongs.schools): Region[] =>
+  schoolDongs.schools[school].map((d: DongRow) => ({
+    id: d.dong,
+    name: d.dong,
+    ...commuteOf(school, d.dong),
+    rentMedian: Math.round(d.rent_median * 10_000),
+    mgmtMedian: MGMT_EXAMPLE,
+    lat: d.lat,
+    lng: d.lng,
+  }));
 
-export const SCHOOLS: School[] = ([
-  {
-    id: "korea", name: "고려대학교", district: "서울 성북구", lat: 37.5894, lng: 127.0322,
-    regions: [
-      r("anam", "안암동", "도보", 10, 55, 7, 37.5862, 127.0291),
-      r("bomun", "보문동", "도보", 18, 50, 6, 37.5853, 127.0198),
-      r("dongseon", "동선동", "버스", 15, 48, 6, 37.5925, 127.0177),
-    ],
-  },
-  {
-    id: "yonsei", name: "연세대학교", district: "서울 서대문구", lat: 37.5658, lng: 126.9386,
-    regions: [
-      r("changcheon", "창천동", "도보", 10, 58, 8, 37.5594, 126.9340),
-      r("daesin", "대신동", "도보", 8, 52, 7, 37.5652, 126.9450),
-      r("yeonhui", "연희동", "버스", 15, 50, 6, 37.5687, 126.9301),
-    ],
-  },
-  {
-    id: "snu", name: "서울대학교", district: "서울 관악구", lat: 37.4599, lng: 126.9519,
-    regions: [
-      r("daehak", "대학동", "버스", 10, 40, 5, 37.4702, 126.9374),
-      r("nakseongdae", "낙성대동", "버스", 12, 45, 6, 37.4766, 126.9586),
-      r("cheongnyong", "청룡동", "버스", 15, 48, 6, 37.4812, 126.9527),
-    ],
-  },
-  {
-    id: "hanyang", name: "한양대학교", district: "서울 성동구", lat: 37.5572, lng: 127.0453,
-    regions: [
-      r("sageun", "사근동", "도보", 7, 50, 6, 37.5622, 127.0447),
-      r("haengdang", "행당동", "도보", 12, 52, 7, 37.5594, 127.0345),
-      r("majang", "마장동", "도보", 15, 47, 6, 37.5661, 127.0428),
-    ],
-  },
-  {
-    id: "konkuk", name: "건국대학교", district: "서울 광진구", lat: 37.5408, lng: 127.0793,
-    regions: [
-      r("hwayang", "화양동", "도보", 7, 53, 7, 37.5464, 127.0711),
-      r("jayang", "자양동", "도보", 12, 50, 6, 37.5340, 127.0821),
-      r("guui", "구의동", "지하철", 15, 48, 6, 37.5404, 127.0880),
-    ],
-  },
-  {
-    id: "kyunghee", name: "경희대학교", district: "서울 동대문구", lat: 37.5964, lng: 127.0525,
-    regions: [
-      r("hoegi", "회기동", "도보", 7, 48, 6, 37.5906, 127.0548),
-      r("imun", "이문동", "도보", 15, 45, 5, 37.5973, 127.0610),
-      r("hwigyeong", "휘경동", "도보", 15, 45, 5, 37.5893, 127.0618),
-    ],
-  },
-] satisfies School[]).map(byDistance);
+/** 동 목록은 학교에서 가까운 순(json 순서 그대로). 첫 번째 동이 기본 선택이 됨 */
+export const SCHOOLS: School[] = [
+  { id: "korea", name: "고려대학교", district: "서울 성북구", lat: 37.5894, lng: 127.0322, regions: regionsOf("고려대학교") },
+  { id: "yonsei", name: "연세대학교", district: "서울 서대문구", lat: 37.5658, lng: 126.9386, regions: regionsOf("연세대학교") },
+  { id: "snu", name: "서울대학교", district: "서울 관악구", lat: 37.4599, lng: 126.9519, regions: regionsOf("서울대학교") },
+  { id: "hanyang", name: "한양대학교", district: "서울 성동구", lat: 37.5572, lng: 127.0453, regions: regionsOf("한양대학교") },
+  { id: "konkuk", name: "건국대학교", district: "서울 광진구", lat: 37.5408, lng: 127.0793, regions: regionsOf("건국대학교") },
+  { id: "kyunghee", name: "경희대학교", district: "서울 동대문구", lat: 37.5964, lng: 127.0525, regions: regionsOf("경희대학교") },
+];
 
 export const findSchool = (id: string) => SCHOOLS.find((s) => s.id === id) ?? SCHOOLS[0];
