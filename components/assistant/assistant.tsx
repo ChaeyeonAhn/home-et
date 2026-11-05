@@ -27,7 +27,8 @@ const TITLE: Record<AssistantMode, string> = {
 /**
  * 오른쪽 아래 동그란 도우미 버튼 + 튀어나오는 창 (은행 앱 상담 버튼처럼).
  * 페이지는 스크롤하지 않고 창 안에서만 스크롤. 데스크톱은 떠 있는 창, 모바일은 아래에서 올라오는 시트.
- * 다른 화면에서는 openAssistant({ mode })로 연다 (lib/assistant-events.ts)
+ * 등본 확인·특약 물어보기는 화면에 따로 두지 않고 이 창의 첫 화면 버튼으로만 들어감.
+ * 다른 화면에서 특정 기능으로 열고 싶으면 openAssistant({ mode })를 쓰면 됨 (lib/assistant-events.ts)
  */
 export function Assistant({ deposit }: { deposit: number }) {
   const [open, setOpen] = useState(false);
@@ -354,7 +355,7 @@ function CloseIcon() {
   );
 }
 
-export function DocIcon() {
+function DocIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
       <path d="M5.5 2.75h6l3.75 3.75v10a.75.75 0 0 1-.75.75h-9a.75.75 0 0 1-.75-.75V3.5a.75.75 0 0 1 .75-.75Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
@@ -363,7 +364,7 @@ export function DocIcon() {
   );
 }
 
-export function ScaleIcon() {
+function ScaleIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
       <path d="M10 3v13.5M6 16.5h8M4 6h12M10 3.5 4 6M10 3.5 16 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
