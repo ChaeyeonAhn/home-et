@@ -134,11 +134,6 @@ export function ReportScreen({
               </div>
             ))}
           </div>
-          {m.reason && (
-            <Callout tone="neutral" className="mt-5">
-              {m.reason}
-            </Callout>
-          )}
         </Card>
 
         <Card>
