@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useId, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { cx, glassBar } from "./styles";
+import { cx, focusRing, glassBar } from "./styles";
 
 // ── 브라우저 상태 훅 ─────────────────────────────
 
@@ -110,6 +110,85 @@ function useModalBehavior(open: boolean, onClose: () => void) {
       window.removeEventListener("keydown", onKey);
     };
   }, [open, onClose]);
+}
+
+// ── 설명 툴팁 (ⓘ 누르면 말풍선) ─────────────────────────────
+
+/**
+ * 라벨 옆 작은 ⓘ 버튼. 누르면 그 아래에 설명 말풍선이 뜸 (바깥 클릭·Esc·스크롤하면 닫힘).
+ * 말풍선은 body에 portal로 띄워서 카드 경계·쌓임 순서에 잘리지 않음.
+ * <label> 안에 있어도 누를 때 연결된 입력으로 포커스가 넘어가지 않게 클릭 기본 동작을 막음.
+ */
+export function InfoTip({ label, children }: { label: string; children: ReactNode }) {
+  const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);
+  const btn = useRef<HTMLButtonElement>(null);
+  const tipId = useId();
+  const close = useCallback(() => setPos(null), []);
+
+  useEffect(() => {
+    if (!pos) return;
+    const onDown = (e: PointerEvent) => {
+      if (!btn.current?.contains(e.target as Node)) close();
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
+    window.addEventListener("pointerdown", onDown);
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", close, { passive: true });
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", close);
+      window.removeEventListener("resize", close);
+    };
+  }, [pos, close]);
+
+  const toggle = () => {
+    if (pos) return close();
+    const r = btn.current?.getBoundingClientRect();
+    if (!r) return;
+    const margin = 16;
+    const width = Math.min(280, window.innerWidth - margin * 2);
+    // 버튼 가운데 기준, 화면 밖으로 나가지 않게
+    const left = Math.min(Math.max(r.left + r.width / 2 - width / 2, margin), window.innerWidth - margin - width);
+    setPos({ top: r.bottom + 8, left, width });
+  };
+
+  return (
+    <>
+      <button
+        ref={btn}
+        type="button"
+        aria-label={label}
+        aria-expanded={!!pos}
+        aria-describedby={pos ? tipId : undefined}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggle();
+        }}
+        className={cx(
+          "inline-grid h-5 w-5 shrink-0 place-items-center rounded-full border border-fg-muted/50 align-middle text-[11px] font-bold leading-none text-fg-muted transition hover:border-primary hover:text-primary",
+          focusRing,
+          pos && "border-primary text-primary",
+        )}
+      >
+        i
+      </button>
+      {pos &&
+        createPortal(
+          <div
+            id={tipId}
+            role="tooltip"
+            style={{ top: pos.top, left: pos.left, width: pos.width }}
+            className="fixed z-50 rounded-panel border border-glass-border bg-glass-strong p-3.5 text-sm leading-relaxed text-fg-sub shadow-glass backdrop-glass motion-safe:animate-fade"
+          >
+            {children}
+          </div>,
+          document.body,
+        )}
+    </>
+  );
 }
 
 // ── 가운데 모달 ─────────────────────────────

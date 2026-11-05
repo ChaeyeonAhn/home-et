@@ -100,7 +100,7 @@ export function RouteEditor({
     <div className="space-y-4">
       {options.length === 0 && (
         <p className="rounded-panel bg-surface-muted p-4 text-[15px] text-fg-sub">
-          경로를 찾지 못했어요. 다음 질문에서 평소 통학 정보를 직접 입력해 주세요.
+          경로를 찾지 못했어요. 직접 입력하기 옵션을 선택한 뒤 다음으로 이동해주세요.
         </p>
       )}
       <OptionList

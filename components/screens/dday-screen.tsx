@@ -8,9 +8,10 @@ import { LawAsk } from "./law-ask";
 import { RegistryCheck } from "./registry-check";
 import { useAuth } from "@/components/providers";
 import {
-  ActionBar, Button, ButtonAnchor, Callout, Card, CardTitle, Dialog, Eyebrow, Field, FinePrint, LinkButton, NumberInput,
+  ActionBar, Badge, Button, ButtonAnchor, Callout, Card, CardTitle, Dialog, Eyebrow, Field, FinePrint, LinkButton, NumberInput,
   PageHeader, SectionLabel, TermCard, TextInput, TextLink, TimelineItem, type BadgeTone,
 } from "@/components/ui";
+import { cx, focusRing } from "@/components/ui/styles";
 
 const badgeTone = (it: DdayItem): BadgeTone => (it.isToday ? "solidAccent" : it.done ? "muted" : "neutral");
 
@@ -119,133 +120,181 @@ export function DdayScreen({
   const extras = (
     <>
       {gcalPrimary && (
-        <div className="flex justify-end max-md:justify-center md:mt-3">
+        <div className="flex justify-end max-md:justify-center md:mt-3 lg:justify-center">
           <LinkButton disabled={!m.valid} onClick={() => downloadIcs(buildIcs(m.steps))} className="font-medium text-fg-sub">
             Apple·다른 캘린더는 .ics 파일 받기
           </LinkButton>
         </div>
       )}
       {gcal.sync.kind === "error" && (
-        <Callout tone="warning" className="mt-2 text-right max-md:text-center">
+        <Callout tone="warning" className="mt-2 text-right max-md:text-center lg:text-center">
           {gcal.sync.message}
         </Callout>
       )}
     </>
   );
+  const calendarButton = (className?: string) =>
+    gcalPrimary ? (
+      <Button size="lg" className={className} disabled={!m.valid || gcal.loading || gcal.sync.kind === "saving"} onClick={gcal.save}>
+        {gcal.sync.kind === "saving" ? "캘린더에 넣는 중…" : "Google 캘린더에 등록"}
+      </Button>
+    ) : (
+      <Button size="lg" className={className} disabled={!m.valid} onClick={() => downloadIcs(buildIcs(m.steps))}>
+        캘린더 파일 받기 (.ics)
+      </Button>
+    );
 
   return (
     <div>
       <PageHeader title="첫 계약, 언제 무엇을 하면 될까?" sub="날짜만 넣으면 단계별 D-day를 알려 드리고, 그때 꼭 알아야 할 용어를 쉽게 풀어 드려요." />
 
-      <Card>
-        {/* 2×2 같은 간격: 계약일 | 잔금·입주일 / 보증금 | 월세 (데스크톱은 한 줄) */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-4 lg:grid-cols-4 lg:items-end">
-          <Field label="계약일" htmlFor="contract">
-            <TextInput id="contract" type="date" value={state.contract} onChange={(e) => update({ contract: e.target.value })} />
-          </Field>
-          <Field label="잔금·입주일" htmlFor="balance">
-            <TextInput id="balance" type="date" value={state.balance} min={state.contract} onChange={(e) => update({ balance: e.target.value })} />
-          </Field>
-          <Field label="보증금" htmlFor="deposit">
-            <NumberInput id="deposit" suffix="원" step={1_000_000} value={state.leaseDeposit} onChange={(v) => update({ leaseDeposit: v })} />
-          </Field>
-          <Field label="월세" htmlFor="rent">
-            <NumberInput id="rent" suffix="원" step={10_000} value={state.leaseRent} onChange={(v) => update({ leaseRent: v })} />
-          </Field>
-        </div>
-        <FinePrint className="mt-3">
-          {m.amountText} · {gcalPrimary ? "버튼 하나로 단계별 일정을 내 Google 캘린더에 넣어 드려요." : ".ics 파일은 Google·Apple 캘린더 모두에 가져올 수 있어요."}
-        </FinePrint>
-        {!m.valid && (
-          <Callout tone="warning" className="mt-2">
-            잔금·입주일은 계약일과 같거나 그 뒤여야 해요.
-          </Callout>
-        )}
-      </Card>
-
-      {m.valid && sel && (
-        <div className="mt-5 grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,2.1fr)]">
-          <Card>
-            <CardTitle meta={`오늘 ${m.todayText} 기준`}>D-day 타임라인</CardTitle>
-            <ol className="mt-4 space-y-2">
-              {m.items.map((it) => (
-                <li key={it.key}>
-                  <TimelineItem
-                    badge={it.badge}
-                    badgeTone={badgeTone(it)}
-                    title={it.title}
-                    sub={it.dateText}
-                    done={it.done}
-                    selected={it.key === sel.key}
-                    expanded={it.key === sel.key && !collapsed}
-                    onSelect={() => {
-                      if (it.key === sel.key) return setCollapsed((c) => !c);
-                      setPicked(it.key);
-                      setCollapsed(false);
-                    }}
-                  />
-                  {/* 모바일: 고른 단계 설명이 바로 아래 펼쳐짐 */}
-                  {it.key === sel.key && !collapsed && (
-                    <div className="px-1 pb-3 pt-4 motion-safe:animate-rise lg:hidden">
-                      <StepDetail sel={sel} />
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ol>
-          </Card>
-
-          <Card className="hidden lg:block">
-            <Eyebrow>
-              {sel.badge} · {sel.dateText}
-            </Eyebrow>
-            <h2 className="mt-1 text-xl font-bold">{sel.title}</h2>
-            <div className="mt-2">
-              <StepDetail sel={sel} />
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* 등기부등본 위험 신호 + 계약서·특약 질문(법령 RAG) */}
-      <div className="mt-5 space-y-5">
-        <RegistryCheck deposit={state.leaseDeposit} />
-        <LawAsk />
-      </div>
-
-      {/* 로그인 안 했으면: 로그인하면 캘린더에 바로 넣을 수 있다고 안내 (로그인하고 돌아오면 등록 버튼으로 바뀜) */}
-      {gcal.needsLogin && (
-        <Card className="mt-5">
-          <CardTitle>Google 캘린더에 넣기</CardTitle>
-          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-fg-sub">로그인하면 단계별 일정을 내 Google 캘린더에 바로 넣을 수 있어요.</p>
-            <Button onClick={gcal.signIn} disabled={gcal.signingIn} aria-busy={gcal.signingIn} className="shrink-0">
-              {gcal.signingIn ? "로그인 화면으로 이동 중…" : "Google로 로그인"}
-            </Button>
+      {/* 데스크톱(lg): 왼쪽 계약 정보 + 캘린더 버튼 | 오른쪽 가로 타임라인 → 단계 설명 → 용어. 그보다 좁으면: 계약 정보 → 세로 타임라인 */}
+      <div className="grid gap-5 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-stretch">
+        <Card className="flex flex-col">
+          <CardTitle>내 계약 정보</CardTitle>
+          {/* 2×2: 계약일 | 잔금·입주일 / 보증금 | 월세, 데스크톱: 한 줄에 하나씩 */}
+          <div className="mt-4 grid grid-cols-2 gap-x-3 gap-y-4 lg:grid-cols-1">
+            <Field label="계약일" htmlFor="contract">
+              <TextInput id="contract" type="date" value={state.contract} onChange={(e) => update({ contract: e.target.value })} />
+            </Field>
+            <Field label="잔금·입주일" htmlFor="balance">
+              <TextInput id="balance" type="date" value={state.balance} min={state.contract} onChange={(e) => update({ balance: e.target.value })} />
+            </Field>
+            <Field label="보증금" htmlFor="deposit">
+              <NumberInput id="deposit" suffix="원" step={1_000_000} value={state.leaseDeposit} onChange={(v) => update({ leaseDeposit: v })} />
+            </Field>
+            <Field label="월세" htmlFor="rent">
+              <NumberInput id="rent" suffix="원" step={10_000} value={state.leaseRent} onChange={(v) => update({ leaseRent: v })} />
+            </Field>
+          </div>
+          {!m.valid && (
+            <Callout tone="warning" className="mt-3">
+              잔금·입주일은 계약일과 같거나 그 뒤여야 해요.
+            </Callout>
+          )}
+          {/* 데스크톱: 캘린더 버튼은 이 카드 맨 아래 */}
+          <div className="mt-auto hidden pt-6 lg:block">
+            {calendarButton("w-full")}
+            {extras}
           </div>
         </Card>
-      )}
 
-      {/* 모바일: 하단 고정 (좁은 '이전' + 캘린더 등록), 데스크톱: 오른쪽 정렬 버튼 줄 */}
+        <div className="min-w-0 space-y-5">
+          {m.valid && sel && (
+            <>
+              {/* 좁은 화면: 세로 타임라인, 고른 단계 설명이 바로 아래 펼쳐짐 */}
+              <Card className="lg:hidden">
+                <CardTitle meta={`오늘 ${m.todayText} 기준`}>D-day 타임라인</CardTitle>
+                <ol className="mt-4 space-y-2">
+                  {m.items.map((it) => (
+                    <li key={it.key}>
+                      <TimelineItem
+                        badge={it.badge}
+                        badgeTone={badgeTone(it)}
+                        title={it.title}
+                        sub={it.dateText}
+                        done={it.done}
+                        selected={it.key === sel.key}
+                        expanded={it.key === sel.key && !collapsed}
+                        onSelect={() => {
+                          if (it.key === sel.key) return setCollapsed((c) => !c);
+                          setPicked(it.key);
+                          setCollapsed(false);
+                        }}
+                      />
+                      {it.key === sel.key && !collapsed && (
+                        <div className="px-1 pb-3 pt-4 motion-safe:animate-rise">
+                          <p className="text-[15px] leading-relaxed">{sel.todo}</p>
+                          <Terms terms={sel.terms} className="mt-6" />
+                          <StepCalendarLink href={sel.calendarUrl} />
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </Card>
+
+              {/* 데스크톱: 가로 타임라인 (뒤로 이어지는 선 위에 단계 카드) */}
+              <Card padding="sm" className="hidden lg:block">
+                <div className="px-1">
+                  <CardTitle meta={`오늘 ${m.todayText} 기준`}>D-day 타임라인</CardTitle>
+                </div>
+                <div className="relative mt-4">
+                  <div aria-hidden className="absolute inset-x-[30px] top-[30px] h-0.5 bg-primary/14" />
+                  <ol className="relative grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-2.5">
+                    {m.items.map((it) => {
+                      const on = it.key === sel.key;
+                      return (
+                        <li key={it.key}>
+                          <button
+                            type="button"
+                            aria-pressed={on}
+                            onClick={() => setPicked(it.key)}
+                            className={cx(
+                              "flex h-full w-full flex-col items-start gap-2 rounded-[18px] border p-3.5 text-left transition",
+                              focusRing,
+                              on ? "border-primary/30 bg-surface/90 shadow-[0_8px_22px_rgb(27_42_74/0.12)]" : "border-glass-border bg-surface/40 hover:bg-surface/70",
+                            )}
+                          >
+                            <Badge tone={badgeTone(it)} className="rounded-[10px]! text-[13px]!">
+                              {it.badge}
+                            </Badge>
+                            <span className={cx("text-[15px]", on ? "font-bold" : "font-semibold", it.done && "text-fg-muted line-through")}>{it.title}</span>
+                            <span className="text-xs text-fg-sub">{it.dateText}</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </div>
+              </Card>
+
+              {/* 데스크톱: 고른 단계 설명 */}
+              <Card className="hidden lg:block">
+                <Eyebrow>
+                  {sel.badge} · {sel.dateText}
+                </Eyebrow>
+                <h2 className="mt-2 text-2xl font-bold tracking-tight">{sel.title}</h2>
+                <p className="mt-3 text-[15px] leading-relaxed text-fg-sub">{sel.todo}</p>
+                <StepCalendarLink href={sel.calendarUrl} />
+              </Card>
+
+              {/* 데스크톱: 용어 카드 */}
+              <Terms terms={sel.terms} className="hidden lg:block" cards />
+            </>
+          )}
+
+          {/* 등기부등본 위험 신호 + 계약서·특약 질문(법령 RAG) */}
+          <RegistryCheck deposit={state.leaseDeposit} />
+          <LawAsk />
+
+          {/* 로그인 안 했으면: 로그인하면 캘린더에 바로 넣을 수 있다고 안내 (로그인하고 돌아오면 등록 버튼으로 바뀜) */}
+          {gcal.needsLogin && (
+            <Card>
+              <CardTitle>Google 캘린더에 넣기</CardTitle>
+              <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-fg-sub">로그인하면 단계별 일정을 내 Google 캘린더에 바로 넣을 수 있어요.</p>
+                <Button onClick={gcal.signIn} disabled={gcal.signingIn} aria-busy={gcal.signingIn} className="shrink-0">
+                  {gcal.signingIn ? "로그인 화면으로 이동 중…" : "Google로 로그인"}
+                </Button>
+              </div>
+            </Card>
+          )}
+        </div>
+      </div>
+
+      {/* 모바일: 하단 고정 (좁은 '이전' + 캘린더 등록), 태블릿: 오른쪽 정렬 버튼 줄, 데스크톱(lg): 캘린더 버튼은 왼쪽 카드에 있어서 '돌아가기'만 */}
       <div className="mt-5">
-        {/* 모바일: 고정 바가 차지하는 빈칸 위에, 데스크톱: 버튼 줄 아래 */}
+        {/* 모바일: 고정 바가 차지하는 빈칸 위에, 태블릿: 버튼 줄 아래 */}
         <div className="md:hidden">{extras}</div>
-        <ActionBar>
+        <ActionBar desktopClassName="md:justify-end md:border-0 md:bg-transparent md:p-0 lg:justify-start">
           <Button variant="secondary" size="lg" onClick={onBack} className="max-md:w-24 max-md:flex-none!">
             <span className="md:hidden">이전</span>
             <span className="hidden md:inline">월세 추천으로 돌아가기</span>
           </Button>
-          {gcalPrimary ? (
-            <Button size="lg" disabled={!m.valid || gcal.loading || gcal.sync.kind === "saving"} onClick={gcal.save}>
-              {gcal.sync.kind === "saving" ? "캘린더에 넣는 중…" : "Google 캘린더에 등록"}
-            </Button>
-          ) : (
-            <Button size="lg" disabled={!m.valid} onClick={() => downloadIcs(buildIcs(m.steps))}>
-              캘린더 파일 받기 (.ics)
-            </Button>
-          )}
+          {calendarButton("lg:hidden")}
         </ActionBar>
-        <div className="max-md:hidden">{extras}</div>
+        <div className="max-md:hidden lg:hidden">{extras}</div>
       </div>
 
       <Dialog
@@ -293,23 +342,33 @@ export function DdayScreen({
 
 type Selected = NonNullable<ReturnType<typeof ddayModel>["selected"]>;
 
-function StepDetail({ sel }: { sel: Selected }) {
+/** 이 단계에서 알아야 할 용어. cards = 데스크톱용 큰 유리 카드 격자 */
+function Terms({ terms, className, cards }: { terms: Selected["terms"]; className?: string; cards?: boolean }) {
   return (
-    <>
-      <p className="text-[15px] leading-relaxed">{sel.todo}</p>
-      <div className="mt-6 space-y-3">
-        <SectionLabel>이 단계에서 알아야 할 용어</SectionLabel>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {sel.terms.map((t) => (
+    <div className={cx("space-y-3", className)}>
+      <SectionLabel>이 단계에서 알아야 할 용어</SectionLabel>
+      <div className={cx("grid gap-3", cards ? "grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3.5" : "sm:grid-cols-2")}>
+        {terms.map((t) =>
+          cards ? (
+            <Card key={t.term} padding="sm" className="h-full">
+              <p className="font-bold text-primary">{t.term}</p>
+              <p className="mt-2 text-sm leading-relaxed text-fg-sub">{t.desc}</p>
+            </Card>
+          ) : (
             <TermCard key={t.term} term={t.term}>
               {t.desc}
             </TermCard>
-          ))}
-        </div>
+          ),
+        )}
       </div>
-      <TextLink href={sel.calendarUrl} target="_blank" rel="noopener noreferrer" className="mt-6">
-        이 단계만 Google 캘린더에 추가 ↗
-      </TextLink>
-    </>
+    </div>
+  );
+}
+
+function StepCalendarLink({ href }: { href: string }) {
+  return (
+    <TextLink href={href} target="_blank" rel="noopener noreferrer" className="mt-6">
+      이 단계만 Google 캘린더에 추가 ↗
+    </TextLink>
   );
 }

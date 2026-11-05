@@ -74,7 +74,7 @@ export const styles = {
   hint: "mt-2 text-xs text-fg-muted",
 
   badge: {
-    base: "inline-grid place-items-center rounded-full px-3 py-1.5 text-xs font-bold",
+    base: "inline-grid place-items-center whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-bold",
     tone: {
       primary: "bg-primary-soft text-primary",
       accent: "bg-accent-soft text-accent",
